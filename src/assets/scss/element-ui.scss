@@ -1,0 +1,19 @@
+%el-form {
+  .el-form-item {
+    margin-bottom: 19px;
+    .el-form-item__label {
+      line-height: 26px;
+      font-size: 14px;
+      color: #686868;
+    }
+    .el-form-item__content {
+      line-height: 1;
+      .el-select {
+        width: 100%;
+      }
+    }
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}

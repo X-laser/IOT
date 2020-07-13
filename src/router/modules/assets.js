@@ -1,0 +1,33 @@
+import Layout from '@/layout'
+import MainContainer from '@/layout/MainContainer'
+
+export default {
+  path: '/assets',
+  index: 4,
+  component: Layout,
+  children: [
+    {
+      path: '',
+      meta: { title: '资产', icon: 'icon-assets' },
+      component: MainContainer,
+      children: [
+        {
+          path: '',
+          meta: { breadcrumb: [{ title: '资产', path: '/assets' }] },
+          component: () => import('@/views/assets')
+        },
+        {
+          path: ':assetId',
+          meta: {
+            breadcrumb: [
+              { title: '资产', path: '/assets' },
+              { title: '', path: '/assets/:assetId' }
+            ]
+          },
+          component: () => import('@/views/assets/details'),
+          props: true
+        }
+      ]
+    }
+  ]
+}

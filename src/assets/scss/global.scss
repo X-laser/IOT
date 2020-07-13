@@ -1,0 +1,14 @@
+@import './mixin.scss';
+@import './variable.scss';
+@import './element-ui.scss';
+
+.center {
+  @include center();
+}
+
+%iconfont {
+  font-family: 'iconfont' !important;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

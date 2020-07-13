@@ -1,0 +1,72 @@
+{
+  "title": {
+    "text": "T1消防远程监控",
+    "top": 17,
+    "left": 35,
+    "textStyle": {
+      "color": "#000",
+      "fontSize": 16
+    }
+  },
+  "tooltip": {},
+  "grid": {
+    "top": 72,
+    "right": 41,
+    "bottom": 47,
+    "left": 78
+  },
+  "xAxis": {
+    "axisLabel": {
+      "interval": 0
+    },
+    "offset": 10,
+    "axisLine": {
+      "show": true,
+      "lineStyle": {
+        "color": "#78758C",
+        "width": 1,
+        "type": "solid",
+        "fontSize": 12
+      }
+    },
+    "axisTick": {
+      "show": false
+    },
+    "data": ["05-06", "05-07", "05-08", "05-09", "05-10", "05-11"]
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": true,
+      "lineStyle": {
+        "color": "#78758C",
+        "width": 1,
+        "type": "solid",
+        "fontSize": 12
+      }
+    },
+    "splitLine": {
+      "lineStyle": {
+        "type": "dotted"
+      }
+    },
+    "axisTick": {
+      "show": false
+    }
+  },
+  "series": [
+    {
+      "type": "line",
+      "smooth": false,
+      "symbolSize": 8,
+      "itemStyle": {
+        "normal": {
+          "color": "#2510D7",
+          "lineStyle": "#2510D7"
+        },
+        "type": "dotted"
+      },
+      "data": [25, 40, 28, 58, 80, 60]
+    }
+  ]
+}

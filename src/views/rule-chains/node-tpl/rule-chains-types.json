@@ -1,0 +1,8 @@
+{
+  "org.thingsboard.rule.engine.filter.TbCheckAlarmStatusNode": "check-alarm-status",
+  "org.thingsboard.rule.engine.filter.TbCheckMessageNode": "check-existence-fields",
+  "org.thingsboard.rule.engine.filter.TbCheckRelationNode": "check-relation",
+  "org.thingsboard.rule.engine.geo.TbGpsGeofencing": "gps-geofencing-filter",
+  "org.thingsboard.rule.engine.geo.TbGpsGeofencingFilterNode": "gps-geofencing-filter",
+  "org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode": "message-type-switch"
+}
