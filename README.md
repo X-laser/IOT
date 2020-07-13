@@ -22,6 +22,3 @@ yarn lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
-
-lushuping@insigma.com.cn
-18714560@qq.com
