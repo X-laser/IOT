@@ -4,5 +4,11 @@
   "org.thingsboard.rule.engine.filter.TbCheckRelationNode": "check-relation",
   "org.thingsboard.rule.engine.geo.TbGpsGeofencing": "gps-geofencing-filter",
   "org.thingsboard.rule.engine.geo.TbGpsGeofencingFilterNode": "gps-geofencing-filter",
-  "org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode": "message-type-switch"
+  "org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode": "message-type-switch",
+  "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode": "message-type",
+  "org.thingsboard.rule.engine.filter.TbOriginatorTypeFilterNode": "originator-type",
+  "org.thingsboard.rule.engine.filter.TbOriginatorTypeSwitchNode": "originator-type-switch",
+  "org.thingsboard.rule.engine.filter.TbJsFilterNode": "js-script",
+  "org.thingsboard.rule.engine.filter.TbJsSwitchNode": "js-switch",
+  "org.thingsboard.rule.engine.metadata.TbGetCustomerAttributeNode": "customer-attributes"
 }

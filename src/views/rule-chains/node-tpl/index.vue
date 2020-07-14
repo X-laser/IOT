@@ -14,7 +14,13 @@ import {
   CheckExistenceFields,
   CheckRelation,
   GpsGeofencingFilter,
-  MessageTypeSwitch
+  MessageTypeSwitch,
+  MessageType,
+  OriginatorType,
+  OriginatorTypeSwitch,
+  JsScript,
+  JsSwitch,
+  CustomerAttributes
 } from './index.js'
 import ruleChainsTypes from './rule-chains-types.json'
 export default {
@@ -23,7 +29,13 @@ export default {
     CheckExistenceFields,
     CheckRelation,
     GpsGeofencingFilter,
-    MessageTypeSwitch
+    MessageTypeSwitch,
+    MessageType,
+    OriginatorType,
+    OriginatorTypeSwitch,
+    JsScript,
+    JsSwitch,
+    CustomerAttributes
   },
   data () {
     return {

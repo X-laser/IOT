@@ -33,7 +33,7 @@ export default {
     },
     width: {
       type: String,
-      default: '580px'
+      default: '600px'
     }
   },
   data () {
