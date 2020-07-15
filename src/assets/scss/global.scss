@@ -6,6 +6,10 @@
   @include center();
 }
 
+.clearfix {
+  @include clearfix();
+}
+
 %iconfont {
   font-family: 'iconfont' !important;
   font-style: normal;

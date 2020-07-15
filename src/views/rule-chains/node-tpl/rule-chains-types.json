@@ -10,5 +10,10 @@
   "org.thingsboard.rule.engine.filter.TbOriginatorTypeSwitchNode": "originator-type-switch",
   "org.thingsboard.rule.engine.filter.TbJsFilterNode": "js-script",
   "org.thingsboard.rule.engine.filter.TbJsSwitchNode": "js-switch",
-  "org.thingsboard.rule.engine.metadata.TbGetCustomerAttributeNode": "customer-attributes"
+  "org.thingsboard.rule.engine.metadata.TbGetCustomerAttributeNode": "customer-attributes",
+  "org.thingsboard.rule.engine.metadata.TbGetCustomerDetailsNode": "customer-details",
+  "org.thingsboard.rule.engine.metadata.TbGetOriginatorFieldsNode": "originator-fields",
+  "org.thingsboard.rule.engine.metadata.TbGetAttributesNode": "originator-attributes",
+  "org.thingsboard.rule.engine.metadata.TbGetTelemetryNode": "originator-telemetry",
+  "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode": "related-attributes"
 }

@@ -20,7 +20,12 @@ import {
   OriginatorTypeSwitch,
   JsScript,
   JsSwitch,
-  CustomerAttributes
+  CustomerAttributes,
+  CustomerDetails,
+  OriginatorFields,
+  OriginatorAttributes,
+  OriginatorTelemetry,
+  RelatedAttributes
 } from './index.js'
 import ruleChainsTypes from './rule-chains-types.json'
 export default {
@@ -35,7 +40,12 @@ export default {
     OriginatorTypeSwitch,
     JsScript,
     JsSwitch,
-    CustomerAttributes
+    CustomerAttributes,
+    CustomerDetails,
+    OriginatorFields,
+    OriginatorAttributes,
+    OriginatorTelemetry,
+    RelatedAttributes
   },
   data () {
     return {

@@ -12,3 +12,8 @@ export { default as JsSwitch } from './FILTER/switch'
 
 // 属性集
 export { default as CustomerAttributes } from './ENRICHMENT/customer-attributes'
+export { default as CustomerDetails } from './ENRICHMENT/customer-details'
+export { default as OriginatorFields } from './ENRICHMENT/originator-fields'
+export { default as OriginatorAttributes } from './ENRICHMENT/originator-attributes'
+export { default as OriginatorTelemetry } from './ENRICHMENT/originator-telemetry'
+export { default as RelatedAttributes } from './ENRICHMENT/related-attributes'
