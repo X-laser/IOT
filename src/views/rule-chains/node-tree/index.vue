@@ -155,6 +155,7 @@ export default {
             border-top: 1px solid #EBEEF5;
             background-color: #ECF0FB;
             .getItem {
+              @include ellipsis();
               width: 172px;
               height: 44px;
               border-radius: 4px;

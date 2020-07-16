@@ -25,7 +25,20 @@ import {
   OriginatorFields,
   OriginatorAttributes,
   OriginatorTelemetry,
-  RelatedAttributes
+  RelatedAttributes,
+  RelatedDeviceAttributes,
+  TenantAttributes,
+  TenantDetails,
+  ChangeOriginator,
+  TransformtionScript,
+  ToEmail,
+  Acknowledge,
+  AssignToCustomer,
+  Checkpoint,
+  ClearAlarm,
+  CopyToView,
+  CreateAlarm,
+  CreateRelation
 } from './index.js'
 import ruleChainsTypes from './rule-chains-types.json'
 export default {
@@ -45,7 +58,20 @@ export default {
     OriginatorFields,
     OriginatorAttributes,
     OriginatorTelemetry,
-    RelatedAttributes
+    RelatedAttributes,
+    RelatedDeviceAttributes,
+    TenantAttributes,
+    TenantDetails,
+    ChangeOriginator,
+    TransformtionScript,
+    ToEmail,
+    Acknowledge,
+    AssignToCustomer,
+    Checkpoint,
+    ClearAlarm,
+    CopyToView,
+    CreateAlarm,
+    CreateRelation
   },
   data () {
     return {
@@ -75,3 +101,38 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scope>
+  .el-form {
+    /deep/ .name-container {
+      @include clearfix();
+      .el-form-item {
+        float: left;
+        &:nth-of-type(1) {
+          width: 440px;
+        }
+        &:nth-of-type(2) {
+          margin-left: 10px;
+          margin-top: 35px;
+        }
+      }
+    }
+    /deep/ .relation-container {
+      @include clearfix();
+      .el-form-item {
+        float: left;
+        &:nth-of-type(1) {
+          width: 80px;
+        }
+        &:nth-of-type(2) {
+          margin-left: 20px;
+          width: 300px;
+        }
+      }
+    }
+    /deep/ .desc {
+      font-size: 12px;
+      color: #808080;
+    }
+  }
+</style>

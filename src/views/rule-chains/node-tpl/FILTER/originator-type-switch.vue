@@ -1,11 +1,13 @@
 <template>
   <el-form ref="form" :model="form" :rules="rules">
-    <el-form-item label="名称" prop="name">
-      <el-input multiple v-model="form.name"></el-input>
-    </el-form-item>
-    <el-form-item prop="debugMode">
-      <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
-    </el-form-item>
+    <div class="name-container">
+      <el-form-item label="名称" prop="name">
+        <el-input multiple v-model="form.name"></el-input>
+      </el-form-item>
+      <el-form-item prop="debugMode">
+        <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
+      </el-form-item>
+    </div>
     <el-form-item label="描述" prop="description">
       <el-input type="textarea" v-model="form.description"></el-input>
     </el-form-item>

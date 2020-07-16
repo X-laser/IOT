@@ -15,5 +15,18 @@
   "org.thingsboard.rule.engine.metadata.TbGetOriginatorFieldsNode": "originator-fields",
   "org.thingsboard.rule.engine.metadata.TbGetAttributesNode": "originator-attributes",
   "org.thingsboard.rule.engine.metadata.TbGetTelemetryNode": "originator-telemetry",
-  "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode": "related-attributes"
+  "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode": "related-attributes",
+  "org.thingsboard.rule.engine.metadata.TbGetDeviceAttrNode": "related-device-attributes",
+  "org.thingsboard.rule.engine.metadata.TbGetTenantAttributeNode": "tenant-attributes",
+  "org.thingsboard.rule.engine.metadata.TbGetTenantDetailsNode": "tenant-details",
+  "org.thingsboard.rule.engine.transform.TbChangeOriginatorNode": "change-originator",
+  "org.thingsboard.rule.engine.transform.TbTransformMsgNode": "transformtion-script",
+  "org.thingsboard.rule.engine.mail.TbMsgToEmailNode": "to-email",
+  "org.thingsboard.rule.engine.flow.TbAckNode": "acknowledge",
+  "org.thingsboard.rule.engine.action.TbAssignToCustomerNode": "assign-to-customer",
+  "org.thingsboard.rule.engine.flow.TbCheckpointNode": "checkpoint",
+  "org.thingsboard.rule.engine.action.TbClearAlarmNode": "clear-alarm",
+  "org.thingsboard.rule.engine.action.TbCopyAttributesToEntityViewNode": "copy-to-view",
+  "org.thingsboard.rule.engine.action.TbCreateAlarmNode": "create-alarm",
+  "org.thingsboard.rule.engine.action.TbCreateRelationNode": "create-relation"
 }

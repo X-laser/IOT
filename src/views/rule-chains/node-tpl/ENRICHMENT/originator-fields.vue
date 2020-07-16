@@ -1,14 +1,16 @@
 <template>
   <el-form ref="form" :model="form" :rules="rules">
-    <el-form-item
-      label="名称"
-      prop="name"
-      :rules="[{ required: true, message: '名称不能为空', trigger: 'change' }]">
-      <el-input multiple v-model="form.name"></el-input>
-    </el-form-item>
-    <el-form-item prop="debugMode">
-      <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
-    </el-form-item>
+    <div class="name-container">
+      <el-form-item
+        label="名称"
+        prop="name"
+        :rules="[{ required: true, message: '名称不能为空', trigger: 'change' }]">
+        <el-input multiple v-model="form.name"></el-input>
+      </el-form-item>
+      <el-form-item prop="debugMode">
+        <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
+      </el-form-item>
+    </div>
     <el-form-item label="字段映射" prop="fieldsMapping" class="fieldsMapping-container">
       <ul class="fieldsMapping">
         <li>

@@ -1,11 +1,13 @@
 <template>
   <el-form ref="form" :model="form" :rules="rules">
-    <el-form-item label="名称" prop="name">
-      <el-input multiple v-model="form.name"></el-input>
-    </el-form-item>
-    <el-form-item prop="debugMode">
-      <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
-    </el-form-item>
+    <div class="name-container">
+      <el-form-item label="名称" prop="name">
+        <el-input multiple v-model="form.name"></el-input>
+      </el-form-item>
+      <el-form-item prop="debugMode">
+        <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
+      </el-form-item>
+    </div>
     <el-form-item label="纬度键名" prop="latitudeKeyName">
       <el-input v-model="form.latitudeKeyName"></el-input>
     </el-form-item>

@@ -25,7 +25,7 @@ export default {
     return {
       form: {
         name: '',
-        debugMode: false,
+        debugMode: '',
         description: ''
       },
       rules: {
@@ -38,12 +38,12 @@ export default {
       this.$refs.form.validate(valid => {
         if (!valid) return false
         this.$emit('submit', {
-          debugMode: this.form.debugMode,
+          debugMode: this.form.debugMode || false,
           name: this.form.name,
+          configuration: {},
           additionalInfo: {
             description: this.form.description
           },
-          configuration: {},
           tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
         })
       })
@@ -52,9 +52,9 @@ export default {
       const { name, debugMode } = this.nodeInfo
       const { description } = this.nodeInfo.additionalInfo || {}
       this.form = {
-        name,
+        name: name || '',
         debugMode: debugMode || false,
-        description
+        description: description || ''
       }
       console.log(this.form)
     }
