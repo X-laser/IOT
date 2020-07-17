@@ -42,7 +42,7 @@ export default {
         name: 'rule chain'
       }]
       for (const key in this.ruleChainsTypes) {
-        this.ruleChainsTypes[key].list = this.ruleChainsTypes[key].list.sort((a, b) => a.name.charCodeAt(0) - b.name.charCodeAt(0))
+        this.ruleChainsTypes[key].list = this.ruleChainsTypes[key].list.sort((a, b) => a.name.localeCompare(b.name))
       }
       this.initEditorData()
     },

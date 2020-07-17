@@ -38,7 +38,25 @@ import {
   ClearAlarm,
   CopyToView,
   CreateAlarm,
-  CreateRelation
+  CreateRelation,
+  Delay,
+  DeleteRelation,
+  Generator,
+  GpsGeofencingEvents,
+  Log,
+  MessageCount,
+  RpcCallReply,
+  RpcCallRequest,
+  SaveAttributes,
+  SaveTimeseries,
+  SaveToCustomTable,
+  SynchronizationEnd,
+  SynchronizationStart,
+  UnassignFromCustomer,
+  AwsSns,
+  AwsSqs,
+  GcpPubsub,
+  Kafka
 } from './index.js'
 import ruleChainsTypes from './rule-chains-types.json'
 export default {
@@ -71,7 +89,25 @@ export default {
     ClearAlarm,
     CopyToView,
     CreateAlarm,
-    CreateRelation
+    CreateRelation,
+    Delay,
+    DeleteRelation,
+    Generator,
+    GpsGeofencingEvents,
+    Log,
+    MessageCount,
+    RpcCallReply,
+    RpcCallRequest,
+    SaveAttributes,
+    SaveTimeseries,
+    SaveToCustomTable,
+    SynchronizationEnd,
+    SynchronizationStart,
+    UnassignFromCustomer,
+    AwsSns,
+    AwsSqs,
+    GcpPubsub,
+    Kafka
   },
   data () {
     return {
@@ -127,6 +163,30 @@ export default {
         &:nth-of-type(2) {
           margin-left: 20px;
           width: 300px;
+        }
+      }
+    }
+    /deep/ .type-container {
+      @include clearfix();
+      .el-form-item {
+        float: left;
+        &:nth-of-type(1) {
+          width: 150px;
+        }
+        &:nth-of-type(2) {
+          margin-left: 20px;
+          width: calc(100% - 170px);
+        }
+      }
+    }
+    /deep/ .time-container, .circle-container {
+      @include clearfix();
+      .el-form-item {
+        float: left;
+        width: calc((100% - 10px) / 2);
+        margin-right: 10px;
+        &:nth-child(even) {
+          margin-right: 0;
         }
       }
     }
