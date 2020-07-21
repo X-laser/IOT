@@ -54,3 +54,10 @@ export { default as AwsSns } from './EXTERNAL/aws-sns'
 export { default as AwsSqs } from './EXTERNAL/aws-sqs'
 export { default as GcpPubsub } from './EXTERNAL/gcp-pubsub'
 export { default as Kafka } from './EXTERNAL/kafka'
+export { default as Mqtt } from './EXTERNAL/mqtt'
+export { default as Rabbitmq } from './EXTERNAL/rabbitmq'
+export { default as RestApiCall } from './EXTERNAL/rest-api-call'
+export { default as SendEmail } from './EXTERNAL/send-email'
+
+// 规则链
+export { default as RuleChain } from './RULECHAIN/rule-chain'

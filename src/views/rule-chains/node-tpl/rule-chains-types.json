@@ -46,5 +46,10 @@
   "org.thingsboard.rule.engine.aws.sns.TbSnsNode": "aws-sns",
   "org.thingsboard.rule.engine.aws.sqs.TbSqsNode": "aws-sqs",
   "org.thingsboard.rule.engine.gcp.pubsub.TbPubSubNode": "gcp-pubsub",
-  "org.thingsboard.rule.engine.kafka.TbKafkaNode": "kafka"
+  "org.thingsboard.rule.engine.kafka.TbKafkaNode": "kafka",
+  "org.thingsboard.rule.engine.mqtt.TbMqttNode": "mqtt",
+  "org.thingsboard.rule.engine.rabbitmq.TbRabbitMqNode": "rabbitmq",
+  "org.thingsboard.rule.engine.rest.TbRestApiCallNode": "rest-api-call",
+  "org.thingsboard.rule.engine.mail.TbSendEmailNode": "send-email",
+  "RULECHAIN": "rule-chain"
 }

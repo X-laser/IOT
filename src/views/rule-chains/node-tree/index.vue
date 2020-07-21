@@ -14,7 +14,7 @@
           :data-id="i.id.id"
           :data-label="i.name"
           :data-fill="ruleChainsTypes[key].color"
-          :data-type="i.clazz"
+          :data-type="i.clazz ? i.clazz : i.type"
           >{{ i.name }}</div>
       </el-collapse-item>
     </el-collapse>

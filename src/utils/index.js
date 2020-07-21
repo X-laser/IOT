@@ -67,3 +67,21 @@ export function deepCopy (obj) {
   }
   return result
 }
+
+// 转 base64
+export function getBase64 (file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    let fileResult = ''
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      fileResult = reader.result
+    }
+    reader.onerror = error => {
+      reject(error)
+    }
+    reader.onloadend = () => {
+      resolve(fileResult)
+    }
+  })
+}

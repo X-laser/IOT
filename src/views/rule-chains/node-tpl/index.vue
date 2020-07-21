@@ -56,7 +56,12 @@ import {
   AwsSns,
   AwsSqs,
   GcpPubsub,
-  Kafka
+  Kafka,
+  Mqtt,
+  Rabbitmq,
+  RestApiCall,
+  SendEmail,
+  RuleChain
 } from './index.js'
 import ruleChainsTypes from './rule-chains-types.json'
 export default {
@@ -107,7 +112,12 @@ export default {
     AwsSns,
     AwsSqs,
     GcpPubsub,
-    Kafka
+    Kafka,
+    Mqtt,
+    Rabbitmq,
+    RestApiCall,
+    SendEmail,
+    RuleChain
   },
   data () {
     return {
