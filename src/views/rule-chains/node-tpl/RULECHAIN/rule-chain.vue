@@ -1,15 +1,10 @@
 <template>
   <el-form ref="form" :model="form" :rules="rules">
-    <div class="name-container">
-      <el-form-item label="规则链" prop="name">
-        <el-select v-model="form.name">
-          <el-option v-for="item in ruleChainList" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item prop="debugMode">
-        <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
-      </el-form-item>
-    </div>
+    <el-form-item label="规则链" prop="name">
+      <el-select v-model="form.name">
+        <el-option v-for="item in ruleChainList" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
+      </el-select>
+    </el-form-item>
     <el-form-item label="描述" prop="description">
       <el-input type="textarea" v-model="form.description"></el-input>
     </el-form-item>
@@ -27,7 +22,6 @@ export default {
     return {
       form: {
         name: '',
-        debugMode: '',
         description: ''
       },
       rules: {
@@ -41,13 +35,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (!valid) return false
         this.$emit('submit', {
-          debugMode: this.form.debugMode || false,
-          name: this.form.name,
-          configuration: {},
+          name: this.ruleChainList.filter(item => item.id.id === this.form.name)[0].name,
+          targetRuleChainId: {
+            entityType: 'RULE_CHAIN',
+            id: this.form.name
+          },
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit',
+          nodeType: 'RULE_CHAIN'
         })
       })
     },
@@ -60,18 +57,16 @@ export default {
       })
       this.ruleChainList = res.data.data
     },
-    init () {
-      const { name, debugMode } = this.nodeInfo
-      const { description } = this.nodeInfo.additionalInfo || {}
+    async init () {
+      const is = JSON.stringify(this.nodeInfo) === '{}'
       this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        description: description || ''
+        name: is ? '' : this.nodeInfo.targetRuleChainId.id,
+        description: is ? '' : this.nodeInfo.additionalInfo.description
       }
-      console.log(this.form)
     }
   },
-  created () {
+  async created () {
+    await this.getRuleChains()
     this.init()
   }
 }

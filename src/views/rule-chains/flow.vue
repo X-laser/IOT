@@ -107,6 +107,7 @@ export default {
           }
         })
       }
+      console.log(_nodes, '_nodes')
       const rulechain = {}
       res.data.ruleChainConnections && res.data.ruleChainConnections.forEach(item => {
         const key = `${item.fromIndex}-${item.targetRuleChainId.id}`
@@ -117,8 +118,8 @@ export default {
         const value = rulechain[key]
         const info = await this.$api.getRuleChainsInfo(value.targetRuleChainId.id)
         edges.push({
-          source: res.data.nodes[value.fromIndex].id.id,
-          target: value.targetRuleChainId.id,
+          source: nodes[value.fromIndex].id.id,
+          target: value.additionalInfo.ruleChainNodeId,
           controlPoints: [{
             x: 10,
             y: 10
@@ -136,8 +137,8 @@ export default {
             lineWidth: 2
           }
         })
-        nodes.push({
-          id: value.targetRuleChainId.id,
+        _nodes.push({
+          id: value.additionalInfo.ruleChainNodeId,
           x: value.additionalInfo.layoutX,
           y: value.additionalInfo.layoutY,
           style: {
@@ -146,7 +147,7 @@ export default {
           size: '172*44',
           shape: 'flow-rect',
           label: `rule chain\n${info.data.name}`,
-          nodeType: 'ruleChain'
+          nodeType: 'RULECHAIN'
         })
       }
       if (res.data.firstNodeIndex !== null) {
@@ -170,12 +171,14 @@ export default {
           }
         })
       }
+      // console.log(_nodes)
       this.reRender({
         nodes: _nodes,
         edges
       })
     },
     reRender (data) {
+      console.log(data)
       this.$refs.ruleChainFlowChart.reRender(data)
     }
   },

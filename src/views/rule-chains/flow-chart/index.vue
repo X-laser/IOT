@@ -40,6 +40,7 @@ export default {
       contextmenu: null,
       nodeId: '',
       nodeInfo: null,
+      nodeType: '',
       nodeFormInfo: {},
       edgeInfo: {},
       showNodeEdit: true,
@@ -57,7 +58,8 @@ export default {
             delete info.id
           }
           return info
-        })
+        }),
+        ruleChainConnections: this.ruleChainsFlowChartData.ruleChainConnections.filter(item => Object.prototype.hasOwnProperty.call(item, 'fromIndex'))
       }
       const res = await this.$api.postRuleChainMetadata(params)
       if (res.status === 200) {
@@ -68,27 +70,55 @@ export default {
       console.log(form)
       let fromIndex = ''
       let toIndex = ''
-      this.ruleChainsFlowChartData.nodes.forEach((item, index) => {
-        if (item.id.id === this.edgeInfo.source) {
-          fromIndex = index
-        }
-        if (item.id.id === this.edgeInfo.target) {
-          toIndex = index
-        }
-      })
-      const connections = this.ruleChainsFlowChartData.connections
-      for (let i = 0; i < connections.length; i++) {
-        if (connections[i].fromIndex === fromIndex && connections[i].toIndex === toIndex) {
-          this.ruleChainsFlowChartData.connections.splice(i--, 1)
-        }
-      }
-      form.link.forEach(item => {
-        this.ruleChainsFlowChartData.connections.push({
-          fromIndex,
-          toIndex,
-          type: item
+      const ruleChainConnections = this.ruleChainsFlowChartData.ruleChainConnections
+      const ruleChainIdList = ruleChainConnections.map(item => item.additionalInfo.ruleChainNodeId)
+      console.log(this.ruleChainsFlowChartData, 'ruleChainsFlowChartData')
+      console.log(this.edgeInfo.target, 'target')
+      if (ruleChainIdList.includes(this.edgeInfo.target)) {
+        let fromIndex = null
+        const ruleChainNodeInfo = ruleChainConnections.filter(item => item.additionalInfo.ruleChainNodeId === this.edgeInfo.target)[0]
+        this.ruleChainsFlowChartData.nodes.forEach((item, index) => {
+          if (item.id.id === this.edgeInfo.source) {
+            fromIndex = index
+          }
         })
-      })
+        for (let i = 0; i < ruleChainConnections.length; i++) {
+          if (ruleChainConnections[i].fromIndex === fromIndex && ruleChainConnections[i].additionalInfo.ruleChainNodeId === this.edgeInfo.target) {
+            this.ruleChainsFlowChartData.ruleChainConnections.splice(i--, 1)
+          }
+        }
+        form.link.forEach(item => {
+          this.ruleChainsFlowChartData.ruleChainConnections.push({
+            ...ruleChainNodeInfo,
+            type: item,
+            fromIndex
+          })
+        })
+        console.log(fromIndex)
+        console.log(ruleChainConnections, 'ruleChainConnections')
+      } else {
+        this.ruleChainsFlowChartData.nodes.forEach((item, index) => {
+          if (item.id.id === this.edgeInfo.source) {
+            fromIndex = index
+          }
+          if (item.id.id === this.edgeInfo.target) {
+            toIndex = index
+          }
+        })
+        const connections = this.ruleChainsFlowChartData.connections
+        for (let i = 0; i < connections.length; i++) {
+          if (connections[i].fromIndex === fromIndex && connections[i].toIndex === toIndex) {
+            this.ruleChainsFlowChartData.connections.splice(i--, 1)
+          }
+        }
+        form.link.forEach(item => {
+          this.ruleChainsFlowChartData.connections.push({
+            fromIndex,
+            toIndex,
+            type: item
+          })
+        })
+      }
       this.flow.update(this.edgeInfo.id, {
         label: form.link.join('/'),
         style: {
@@ -143,11 +173,23 @@ export default {
     clickContextmenu (type) {
       this.$refs.contextmenu.style.display = 'none'
       let nodeInfo = null
+      let listName = 'nodes'
       switch (type) {
         case 'node-edit':
-          nodeInfo = this.ruleChainsFlowChartData.nodes.filter(item => item.id.id === this.nodeId)[0]
+          console.log(this.nodeType)
+          console.log(this.nodeId, 'nodeId')
+          if (this.nodeType === 'RULECHAIN') {
+            listName = 'ruleChainConnections'
+          }
+          nodeInfo = this.ruleChainsFlowChartData[listName].filter(item => {
+            if (this.nodeType === 'RULECHAIN') {
+              return item.additionalInfo.ruleChainNodeId === this.nodeId
+            } else {
+              return item.id.id === this.nodeId
+            }
+          })[0]
           this.$refs.ruleChainsTpl.openDialog({
-            nodeTpl: nodeInfo.type,
+            nodeTpl: this.nodeType === 'RULECHAIN' ? this.nodeType : nodeInfo.type,
             nodeInfo
           })
           break
@@ -187,6 +229,7 @@ export default {
         console.log(evt)
         this.showNodeEdit = evt.item.model.label !== 'Input'
         this.showNodeDelete = evt.item.model.label !== 'Input'
+        this.nodeType = evt.item.model.nodeType
         this.nodeId = evt.item.id
       })
       this.flow.on('edge:contextmenu', evt => {
@@ -221,21 +264,35 @@ export default {
           case 'add':
             if (evt.item.type === 'node') {
               delete this.nodeFormInfo.tplType
+              if (this.nodeFormInfo.nodeType === 'RULE_CHAIN') {
+                ruleChainConnections.push({
+                  additionalInfo: {
+                    ...this.nodeFormInfo.additionalInfo,
+                    layoutX: this.nodeInfo.x,
+                    layoutY: this.nodeInfo.y,
+                    ruleChainNodeId: evt.item.id
+                  },
+                  targetRuleChainId: {
+                    ...this.nodeFormInfo.targetRuleChainId
+                  }
+                })
+              } else {
+                nodes.push({
+                  ...this.nodeFormInfo,
+                  type: this.nodeInfo.nodeType,
+                  // configuration: {},
+                  additionalInfo: {
+                    ...this.nodeFormInfo.additionalInfo,
+                    layoutX: this.nodeInfo.x,
+                    layoutY: this.nodeInfo.y
+                  },
+                  id: {
+                    id: evt.item.id,
+                    type: 'add'
+                  }
+                })
+              }
               console.log(this.nodeFormInfo)
-              nodes.push({
-                ...this.nodeFormInfo,
-                type: this.nodeInfo.nodeType,
-                // configuration: {},
-                additionalInfo: {
-                  ...this.nodeFormInfo.additionalInfo,
-                  layoutX: this.nodeInfo.x,
-                  layoutY: this.nodeInfo.y
-                },
-                id: {
-                  id: evt.item.id,
-                  type: 'add'
-                }
-              })
             } else if (evt.item.type === 'edge') {
               if (evt.model.source !== 'input') {
                 this.edgeInfo = evt.model
@@ -252,26 +309,46 @@ export default {
           case 'update':
             delete this.nodeFormInfo.tplType
             if (evt.item.type === 'node') {
-              this.ruleChainsFlowChartData.nodes.forEach((item, index) => {
-                const configuration = {
-                  ...item.configuration,
-                  ...this.nodeFormInfo.configuration
-                }
-                const additionalInfo = {
-                  ...item.additionalInfo,
-                  ...this.nodeFormInfo.additionalInfo,
-                  layoutX: evt.updateModel.x,
-                  layoutY: evt.updateModel.y
-                }
-                if (item.id.id === evt.item.id) {
-                  this.ruleChainsFlowChartData.nodes[index] = {
-                    ...item,
-                    ...this.nodeFormInfo,
-                    configuration,
-                    additionalInfo
+              if (this.nodeFormInfo.nodeType === 'RULE_CHAIN') {
+                this.ruleChainsFlowChartData.ruleChainConnections.forEach((item, index) => {
+                  if (item.additionalInfo.ruleChainNodeId === evt.item.id) {
+                    this.ruleChainsFlowChartData.ruleChainConnections[index] = {
+                      ...item,
+                      targetRuleChainId: {
+                        ...item.targetRuleChainId,
+                        ...this.nodeFormInfo.targetRuleChainId
+                      },
+                      additionalInfo: {
+                        ...item.additionalInfo,
+                        ...this.nodeFormInfo.additionalInfo,
+                        layoutX: evt.updateModel.x,
+                        layoutY: evt.updateModel.y
+                      }
+                    }
                   }
-                }
-              })
+                })
+              } else {
+                this.ruleChainsFlowChartData.nodes.forEach((item, index) => {
+                  const configuration = {
+                    ...item.configuration,
+                    ...this.nodeFormInfo.configuration
+                  }
+                  const additionalInfo = {
+                    ...item.additionalInfo,
+                    ...this.nodeFormInfo.additionalInfo,
+                    layoutX: evt.updateModel.x,
+                    layoutY: evt.updateModel.y
+                  }
+                  if (item.id.id === evt.item.id) {
+                    this.ruleChainsFlowChartData.nodes[index] = {
+                      ...item,
+                      ...this.nodeFormInfo,
+                      configuration,
+                      additionalInfo
+                    }
+                  }
+                })
+              }
             }
             break
           case 'remove':
