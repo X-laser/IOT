@@ -2,9 +2,12 @@
   <button type="button"
     :class="[
       'wx-button',
-      `wx-button-${type}`
+      `wx-button-${type}`,
+      icon ? 'wx-button-icon' : '',
+      circle ? 'wx-button-circle' : ''
     ]"
     @click="$event => $emit('click', $event)">
+    <i v-if="icon" class="iconfont" :class="icon"></i>
     <span v-if="$slots.default">
       <slot></slot>
     </span>
@@ -18,6 +21,12 @@ export default {
     type: {
       type: String,
       default: 'default'
+    },
+    icon: {
+      type: String
+    },
+    circle: {
+      type: Boolean
     }
   }
 }
@@ -54,6 +63,23 @@ export default {
         color: #000;
         font-weight: bolder;
         padding: 6px 31px 5px 32px;
+      }
+    }
+    &.wx-button-icon {
+      background-color: transparent;
+      i {
+        font-size: 20px;
+        color: #B3B3B3;
+      }
+    }
+    &.wx-button-circle {
+      background-color: #6993FF;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      i {
+        color: #fff;
+        font-size: 18px;
       }
     }
   }

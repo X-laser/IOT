@@ -24,7 +24,8 @@ export default {
               { title: '', path: '/entity-views/:entityId' }
             ]
           },
-          component: () => import('@/views/entity-views/details')
+          component: () => import('@/views/entity-views/details'),
+          props: true
         }
       ]
     }

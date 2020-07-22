@@ -87,16 +87,17 @@
     overflow: hidden;
     margin-left: 30px;
     .title {
-      line-height: 33px;
+      line-height: 40px;
       font-family: PingFangSC-Medium;
-      margin-top: 33px;
+      margin-top: 28px;
+      font-size: 28px;
     }
     .details {
-      font-size: 14px;
+      font-size: 12px;
       color: #8C8C8C;
       line-height: 20px;
       margin-top: 3px;
-      margin-bottom: 27px;
+      margin-bottom: 22px;
     }
   }
   .el-tabs {
