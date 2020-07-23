@@ -10,6 +10,11 @@ const user = {
     /** 设置用户信息 */
     SET_USER_INFO: (state, userInfo) => {
       state.userInfo = userInfo
+      window.sessionStorage.setItem('userInfo', JSON.stringify(userInfo))
+    },
+    /** 设置token */
+    SET_TOKEN: (state, token) => {
+      state.token = token
     }
   },
   actions: {
@@ -17,16 +22,14 @@ const user = {
       return new Promise(async (resolve, reject) => {
         try {
           const res = await api.login({ username, password })
+          console.log(res)
           if (res.status === 200) {
-            commit('SET_USER_INFO', res.data)
+            commit('SET_USER_INFO', {
+              name: username,
+              password: checkedPsd ? password : ''
+            })
             setToken(res.data.token)
             router.push({ path: '/' })
-          }
-          // 记住密码
-          if (checkedPsd) {
-            window.sessionStorage.setItem('userInfo', JSON.stringify(Object.assign(res.data, { username, password })))
-          } else {
-            window.sessionStorage.setItem('userInfo', JSON.stringify(Object.assign(res.data, { username, password: '' })))
           }
           resolve(res)
         } catch (error) {

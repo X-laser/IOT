@@ -7,8 +7,8 @@
       </el-dropdown-menu>
     </el-dropdown>
     <div class="account">
-      <span class="username">lushuping</span>
-      <span class="user-author">设备管理员账户</span>
+      <span class="username">{{ $store.getters.userInfo.name }}</span>
+      <span class="user-author">{{ $store.getters.userInfo.authority }}</span>
     </div>
   </div>
 </template>

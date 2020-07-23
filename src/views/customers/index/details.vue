@@ -1,5 +1,9 @@
 <template>
-  <div class="app-container">
+  <div class="app-container details-container">
+    <div class="btn-container">
+      <wx-button type="primary" icon="iconiconfontcheck" circle @click="submit('form')"></wx-button>
+      <wx-button type="primary" icon="iconcuo" circle @click="$router.push({ path: '/customers' })"></wx-button>
+    </div>
     <div class="title-container">
       <h3 class="title">{{ customersInfo.name }}</h3>
       <div class="details">用户详情</div>
@@ -11,9 +15,9 @@
           <wx-button type="warning" @click="jumpRouter(customersInfo, 'assets')">管理用户资产</wx-button>
           <wx-button type="warning" @click="jumpRouter(customersInfo, 'devices')">管理用户设备</wx-button>
           <wx-button type="warning" @click="jumpRouter(customersInfo, 'dashboards')">管理用户应用</wx-button>
-          <wx-button v-if="!(customersInfo && customersInfo.isPublic)" type="warning" @click="del(customersInfo)">删除用户</wx-button>
+          <wx-button v-if="!(customersInfo.additionalInfo && customersInfo.additionalInfo.isPublic)" type="warning" @click="del(customersInfo)">删除用户</wx-button>
         </div>
-        <el-form ref="form" :model="form" :rules="formRules">
+        <el-form ref="form" :model="form" :rules="formRules" v-if="!(customersInfo.additionalInfo && customersInfo.additionalInfo.isPublic)">
           <el-form-item label="标题" prop="title">
             <el-input v-model="form.title"></el-input>
           </el-form-item>
@@ -45,9 +49,6 @@
           </el-form-item>
           <el-form-item label="邮箱" prop="email">
             <el-input v-model="form.email"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="submit('form')">保存</el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -97,7 +98,7 @@ export default {
         const res = await this.$api.deleteCustomer(row.id.id)
         if (res.status === 200) {
           this.$message.success('删除成功')
-          this.getCustomersInfo()
+          this.$router.push({ path: '/customers' })
         }
       }).catch(() => {})
     },
@@ -121,8 +122,8 @@ export default {
       })
     },
     async getCustomersInfo () {
-      const res = await this.$api.getCustomersList({ page: 0, pageSize: 999999 })
-      this.customersInfo = (res.data.data && res.data.data.filter(item => item.id.id === this.customerId))[0] || {}
+      const res = await this.$api.getCustomersInfo(this.customerId)
+      this.customersInfo = res.data
       for (const key in this.form) {
         this.form[key] = key === 'description' ? this.customersInfo.additionalInfo.description : this.customersInfo[key]
       }

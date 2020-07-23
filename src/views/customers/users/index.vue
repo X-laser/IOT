@@ -45,8 +45,7 @@
     ></el-pagination>
     <icloud-dialog
       title="添加账号"
-      :visible.sync="visible"
-      @close="resetForm('form')">
+      :visible.sync="visible">
       <el-form ref="form" :model="form" :rules="formRules" size="mini">
         <el-form-item label="电子邮件" prop="email">
           <el-input v-model="form.email"></el-input>
@@ -76,12 +75,10 @@
       :visible.sync="userAcitonVisible"
       title="用户激活链接">
       <div class="link">
-        <span>使用该链接激活用户</span>
-        <el-button type="primary" size="mini">激活</el-button>
+        <span>使用该链接<el-button type="text" class="active">激活</el-button>激活用户</span>
       </div>
       <div class="link-address">
-        <span>{{ link }}</span>
-        <el-button type="danger" size="mini">复制</el-button>
+        <code>{{ link }}</code>
       </div>
     </icloud-dialog>
   </div>
@@ -89,7 +86,7 @@
 
 <script>
 import { page, resize } from '@/mixins'
-// import { setToken } from '@/utils/token'
+import { getDate } from '@/utils'
 export default {
   props: ['customerId'],
   mixins: [page, resize],
@@ -98,8 +95,10 @@ export default {
       listQuery: {},
       list: [],
       listTitle: [
-        { property: 'name', label: '登录名', width: 150 },
-        { property: 'email', label: '邮箱', width: 150 },
+        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'firstName', label: '名字', width: 150 },
+        { property: 'lastName', label: '姓', width: 150 },
+        { property: 'email', label: '电子邮件', width: 150 },
         { property: 'btn', label: '操作', width: 250 }
       ],
       visible: false,
@@ -117,18 +116,21 @@ export default {
         ]
       },
       userAcitonVisible: false,
-      link: 'http://10.10.17.16:8888/api/noauth/activate?activateToken=lQxVnWy7MT6cCwdpokw0Gbf08WqJWP'
+      link: ''
     }
   },
   methods: {
-    // async login (id) {
-    //   const tokenRes = await this.$api.getToken(id)
-    //   if (tokenRes.status === 200) {
-    //     setToken(tokenRes.data.token)
-    //     const res = await this.$api.getUserInfo(id)
-    //     const userInfo = JSON.parse(window.sessionStorage.getItem('userInfo'))
-    //   }
-    // },
+    async login (userId) {
+      const res = await this.$api.getToken(userId)
+      if (res.status === 200) {
+        this.$store.commit('SET_TOKEN', res.token)
+        const userInfo = await this.$api.getUserInfo(userId)
+        if (userInfo.status === 200) {
+          this.$store.commit('SET_USER_INFO', userInfo.data)
+          this.$router.push({ path: '/' })
+        }
+      }
+    },
     del (row) {
       this.$confirm('小心！确认后,账户和所有相关数据将不可恢复。', `您确定要删除账户 '${row.name}' 吗？`, {
         confirmButtonText: '是',
@@ -155,20 +157,21 @@ export default {
         }, this.form)
         delete params.description
         delete params.sendActivationMail
-        const res = await this.$api.updateUser(params, this.form.sendActivationMail)
+        const res = await this.$api.postUserSendActivationMail(params, this.form.sendActivationMail)
         if (res.status === 200) {
-          this.$message.success('添加成功')
-          this.getList()
-          if (!this.form.sendActivationMail) {
+          if (this.form.sendActivationMail) {
             this.visible = false
           } else {
+            const activationLink = await this.$api.getUserActivationLink(res.data.id.id)
+            this.link = activationLink.data
             this.userAcitonVisible = true
           }
+          this.getList()
         }
       })
     },
     cellClick (row, column) {
-      if (column.label === '登录名') {
+      if (column.label !== '操作') {
         this.$router.push({ path: `/customers/${this.customerId}/users/${row.id.id}`, query: { title: row.name } })
       }
     },
@@ -182,23 +185,41 @@ export default {
         sortProperty: 'createdTime',
         sortOrder: 'DESC'
       }, this.customerId)
-      this.list = res.data.data && res.data.data
+      this.list = (res.data.data && res.data.data.map(ele => Object.assign(ele, {
+        createdTime: getDate(ele.createdTime)
+      }))) || []
       this.total = res.data.totalElements
     }
   },
   created () {
     this.getList()
+  },
+  watch: {
+    userAcitonVisible (n) {
+      if (!n) {
+        this.visible = false
+      }
+    },
+    visible (n) {
+      if (!n) {
+        this.$refs.form.resetFields()
+      }
+    }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.active {
+  font-size: 20px;
+  padding: 0 5px;
+}
 .link {
   font-size: 20px;
   color: rgba(0, 0, 0, 0.87);
 }
 .link-address {
-  span {
+  code {
     margin: 20px 0;
     padding: 15px;
     display: inline-block;

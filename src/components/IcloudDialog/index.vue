@@ -8,10 +8,10 @@
             <i class="icloud-dialog__close el-icon el-icon-close"></i>
           </button>
         </div>
-        <div class="icloud-dialog__body" ref="icloudDialogBody" :style="icloudDialogBodyStyle">
+        <div class="icloud-dialog__body" :class="$slots.footer ? '' : 'is-active'" ref="icloudDialogBody" :style="icloudDialogBodyStyle">
           <slot></slot>
         </div>
-        <div class="icloud-dialog__footer" ref="icloudDialogFooter" v-if="$slots.default">
+        <div v-if="$slots.footer" class="icloud-dialog__footer" ref="icloudDialogFooter">
           <slot name="footer"></slot>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default {
     init () {
       const clientHeight = document.documentElement.clientHeight || document.body.clientHeight
       const icloudDialogHeaderHeight = this.$refs.icloudDialogHeader.offsetHeight
-      const icloudDialogFooterHeight = this.$refs.icloudDialogFooter.offsetHeight
+      const icloudDialogFooterHeight = (this.$refs.icloudDialogFooter && this.$refs.icloudDialogFooter.offsetHeight) || 0
       const maxHeight = clientHeight - icloudDialogHeaderHeight - icloudDialogFooterHeight - 100
       this.icloudDialogBodyStyle = { maxHeight: maxHeight + 'px' }
     }
@@ -83,6 +83,7 @@ export default {
     .icloud-dialog {
       position: relative;
       box-shadow: 0px 13px 61px 0px rgba(169, 169, 169, 0.37);
+      border-radius: 18px;
       .icloud-dialog__header {
         height: 77px;
         width: 100%;
@@ -130,12 +131,16 @@ export default {
         .el-form {
           @extend %el-form;
         }
+        &.is-active {
+          border-radius: 0 0 18px 18px;
+        }
       }
       .icloud-dialog__footer {
         width: 100%;
         height: 97px;
         background-color: #fff;
         border-top: 1px solid #D5D5D5;
+        border-radius: 0 0 18px 18px;
         .icloud-dialog-footer {
           display: flex;
           justify-content: flex-end;

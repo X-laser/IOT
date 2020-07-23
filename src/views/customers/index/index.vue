@@ -24,11 +24,11 @@
         show-overflow-tooltip>
         <template slot-scope="scope">
           <span v-if="item.property === 'btn'" class="center">
-            <el-button v-if="!(scope.row.additionalInfo && scope.row.additionalInfo.isPublic)" type="primary" size="mini" @click="jumpRouter(scope.row, 'users')">管理用户账户</el-button>
-            <el-button type="primary" size="mini" @click="jumpRouter(scope.row, 'assets')">管理用户资产</el-button>
-            <el-button type="primary" size="mini" @click="jumpRouter(scope.row, 'devices')">管理用户设备</el-button>
-            <el-button type="primary" size="mini" @click="jumpRouter(scope.row, 'dashboards')">管理用户应用</el-button>
-            <el-button v-if="!(scope.row.additionalInfo && scope.row.additionalInfo.isPublic)" type="danger" size="mini" @click="del(scope.row)">删除用户</el-button>
+            <el-button v-if="!(scope.row.additionalInfo && scope.row.additionalInfo.isPublic)" type="text" @click="jumpRouter(scope.row, 'users')">管理用户账户</el-button>
+            <el-button type="text" @click="jumpRouter(scope.row, 'assets')">管理用户资产</el-button>
+            <el-button type="text" @click="jumpRouter(scope.row, 'devices')">管理用户设备</el-button>
+            <el-button type="text" @click="jumpRouter(scope.row, 'dashboards')">管理用户应用</el-button>
+            <el-button v-if="!(scope.row.additionalInfo && scope.row.additionalInfo.isPublic)" type="text" @click="del(scope.row)">删除用户</el-button>
           </span>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>
@@ -49,8 +49,7 @@
     <icloud-dialog
       title="添加用户"
       :visible.sync="visible"
-      width="616px"
-      @close="resetForm('form')">
+      width="616px">
       <el-form ref="form" :model="form" :rules="formRules" size="mini">
         <el-form-item label="标题" prop="title">
           <el-input v-model="form.title"></el-input>
@@ -86,8 +85,8 @@
         </el-form-item>
       </el-form>
       <div class="icloud-dialog-footer" slot="footer">
-        <el-button type="primary" size="mini" @click="submit('form')">确定</el-button>
-        <el-button size="mini" @click="visible = false">取消</el-button>
+        <wx-button type="primary" @click="submit('form')">确定</wx-button>
+        <wx-button @click="visible = false">取消</wx-button>
       </div>
     </icloud-dialog>
   </div>
@@ -95,6 +94,7 @@
 
 <script>
 import { page, resize } from '@/mixins'
+import { getDate } from '@/utils'
 export default {
   mixins: [page, resize],
   data () {
@@ -102,11 +102,11 @@ export default {
       listQuery: {},
       list: [],
       listTitle: [
-        { property: 'name', label: '登录名', width: 150 },
-        { property: 'address', label: '地址', width: 150 },
-        { property: 'mobile', label: '手机', width: 150 },
-        { property: 'phone', label: '电话', width: 150 },
+        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'name', label: '标题', width: 150 },
         { property: 'email', label: '邮箱', width: 150 },
+        { property: 'country', label: '国家', width: 150 },
+        { property: 'city', label: '城市', width: 150 },
         { property: 'btn', label: '操作', width: 600 }
       ],
       visible: false,
@@ -145,7 +145,7 @@ export default {
       }).catch(() => {})
     },
     cellClick (row, column) {
-      if (column.label === '登录名') {
+      if (column.label !== '操作') {
         this.$router.push({ path: `/customers/${row.id.id}`, query: { title: row.name } })
       }
     },
@@ -180,12 +180,21 @@ export default {
         sortProperty: 'createdTime',
         sortOrder: 'DESC'
       })
-      this.list = res.data.data && res.data.data
+      this.list = (res.data.data && res.data.data.map(ele => Object.assign(ele, {
+        createdTime: getDate(ele.createdTime)
+      }))) || []
       this.total = res.data.totalElements
     }
   },
   created () {
     this.getList()
+  },
+  watch: {
+    visible (n) {
+      if (!n) {
+        this.$refs.form.resetFields()
+      }
+    }
   }
 }
 </script>

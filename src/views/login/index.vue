@@ -51,9 +51,10 @@ export default {
     init () {
       if (window.sessionStorage.getItem('userInfo')) {
         const userInfo = JSON.parse(window.sessionStorage.getItem('userInfo'))
-        this.loginForm.username = userInfo.username
+        this.loginForm.username = userInfo.name
         this.loginForm.password = userInfo.password
-        this.loginForm.checkedPsd = userInfo.password !== '' ? true : false // eslint-disable-line
+        const isCheck = Object.hasOwnProperty.call(userInfo, 'password') && this.loginForm.password !== ''
+        this.loginForm.checkedPsd = isCheck
       }
     }
   },
