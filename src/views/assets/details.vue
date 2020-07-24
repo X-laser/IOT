@@ -1,8 +1,12 @@
 <template>
-  <div class="app-container">
+  <div class="app-container details-container">
+    <div class="btn-container">
+      <wx-button type="primary" icon="iconiconfontcheck" circle @click="submit('form')"></wx-button>
+      <wx-button type="primary" icon="iconcuo" circle @click="$router.push({ path: '/assets' })"></wx-button>
+    </div>
     <div class="title-container">
       <h3 class="title">{{ assetsInfo.name }}</h3>
-      <div class="details">用户详情</div>
+      <div class="details">资产详情</div>
     </div>
     <el-tabs type="border-card">
       <el-tab-pane label="详情">
@@ -23,9 +27,6 @@
           </el-form-item>
           <el-form-item label="描述" prop="description">
             <el-input v-model="form.description"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <wx-button type="primary">修改</wx-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -58,6 +59,25 @@ export default {
     }
   },
   methods: {
+    submit () {
+      this.$refs.form.validate(async valid => {
+        if (!valid) return false
+        const params = {
+          ...this.assetsInfo,
+          ...this.form,
+          additionalInfo: {
+            description: this.form.description
+          }
+        }
+        delete params.description
+        const res = await this.$api.postAsset(params)
+        if (res.status === 200) {
+          this.$message.success('资产修改成功')
+          this.$router.push({ path: `/assets/${this.assetId}`, query: { title: this.form.name } })
+          this.getAssetsInfo()
+        }
+      })
+    },
     async getAssetsInfo () {
       const res = await this.$api.getAssetInfos({
         page: 0,

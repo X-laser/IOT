@@ -55,10 +55,10 @@
     <icloud-dialog title="审计日志详情" :visible.sync="visible">
       <el-form ref="form" :model="form">
         <el-form-item label="活动数据">
-          <el-input type="textarea" v-model="form.actionData" :rows="6" readonly></el-input>
+          <el-input type="textarea" autosize readonly v-model="form.actionData"></el-input>
         </el-form-item>
         <el-form-item label="失败详情" v-if="form.actionFailureDetails">
-          <el-input type="textarea" v-model="form.actionFailureDetails" :rows="20" readonly></el-input>
+          <el-input type="textarea" autosize readonly v-model="form.actionFailureDetails"></el-input>
         </el-form-item>
       </el-form>
     </icloud-dialog>

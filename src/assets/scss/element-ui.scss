@@ -17,3 +17,43 @@
     }
   }
 }
+
+.el-message-box {
+  width: 580px;
+  border-radius: 18px;
+  .el-message-box__header {
+    padding: 50px 0 23px 29px;
+    .el-message-box__title {
+      line-height: 28px;
+      span {
+        color: #000;
+        font-size: 22px;
+        font-family: PingFangSC-Medium;
+        font-weight: bolder;
+      }
+    }
+    .el-message-box__headerbtn {
+      display: none;
+    }
+  }
+  .el-message-box__content {
+    padding: 0 29px 39px 29px;
+    border-bottom: 1px solid #D5D5D5;
+    .el-message-box__container {
+      .el-message-box__message {
+        p {
+          color: #595959;
+          font-size: 14px;
+          font-family: PingFangSC-Regular;
+          line-height: 20px;
+        }
+      }
+    }
+  }
+  .el-message-box__btns {
+    padding: 24px 42px 14px 0;
+    .el-button {
+      padding: 12px 42px;
+    }
+  }
+}

@@ -24,7 +24,8 @@ export default {
               { title: '', path: '/devices/:deviceId' }
             ]
           },
-          component: () => import('@/views/devices/details')
+          component: () => import('@/views/devices/details'),
+          props: true
         }
       ]
     }

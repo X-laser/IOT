@@ -140,8 +140,7 @@ export default {
       }
       this.$confirm(message[type], title[type], {
         confirmButtonText: '是',
-        cancelButtonText: '否',
-        type: 'warning'
+        cancelButtonText: '否'
       }).then(async _ => {
         let res = null
         switch (type) {

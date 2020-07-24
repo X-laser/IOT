@@ -8,9 +8,11 @@
       margin-bottom: 0;
     }
   }
-  .el-table {
+  > .el-table {
     margin: 0 20px;
     width: calc(100% - 40px);
+  }
+  .el-table {
     border-radius: 12px;
     background-color: #fff;
     .el-table__header {
@@ -135,17 +137,20 @@
       }
     }
     .el-tabs__content {
-      .button-container {
-        .wx-button {
-          margin-right: 24px;
-          margin-bottom: 40px;
-          &:last-of-type {
-            margin-right: 0;
+      .el-tab-pane {
+        height: 100%;
+        .button-container {
+          .wx-button {
+            margin-right: 24px;
+            margin-bottom: 40px;
+            &:last-of-type {
+              margin-right: 0;
+            }
           }
         }
       }
       padding: 25px 28px 27px 28px;
-      height: calc(100% - 58px);
+      height: calc(100% - 52px);
       overflow-y: auto;
       .el-form {
         // margin-top: 40px;

@@ -19,7 +19,11 @@ export default {
   postSendActivationMail: email => request({ url: `/api/user/sendActivationMail?email=${email}`, method: 'post' }),
   postUserCredentialsEnabled: (id, userCredentialsEnabled) => request({ url: `/api/user/${id}/userCredentialsEnabled?userCredentialsEnabled=${userCredentialsEnabled}`, method: 'post' }),
   postCustomerAsset: (userId, assetId) => request({ url: `/api/customer/${userId}/asset/${assetId}`, method: 'post' }),
+  postCustomerDevice: (userId, deviceId) => request({ url: `/api/customer/${userId}/device/${deviceId}`, method: 'post' }),
+  postCustomerDashboard: (userId, dashboardId) => request({ url: `/api/customer/${userId}/dashboard/${dashboardId}`, method: 'post' }),
   deleteCustomer: id => request({ url: `/api/customer/${id}`, method: 'delete' }),
   deleteUser: id => request({ url: `/api/user/${id}`, method: 'delete' }),
-  deleteCustomerAsset: id => request({ url: `/api/customer/asset/${id}`, method: 'delete' })
+  deleteCustomerAsset: id => request({ url: `/api/customer/asset/${id}`, method: 'delete' }),
+  deleteCustomerDevice: id => request({ url: `/api/customer/device/${id}`, method: 'delete' }),
+  deleteCustomerDashboard: (userId, dashboardId) => request({ url: `/api/customer/${userId}/dashboard/${dashboardId}`, method: 'delete' })
 }

@@ -116,7 +116,7 @@ export default {
         const res = await this.$api.updateCustomer(params)
         if (res.status === 200) {
           this.$message.success('保存成功')
-          this.$router.push({ path: this.$router.path, query: { ...this.$route.query, title: this.form.title } })
+          this.$router.push({ path: `/customers/${this.customerId}`, query: { title: this.form.title } })
           this.getCustomersInfo()
         }
       })
