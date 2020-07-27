@@ -1,30 +1,26 @@
 <template>
-  <div class="app-container" ref="appContainer" v-resize="mixinResize">
-    <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
-        <el-form-item label="时间">
-          <el-date-picker
-            v-model="listQuery.time"
-            value-format="timestamp"
-            type="datetimerange"
-            :picker-options="pickerOptions"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            align="right">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
+  <div class="log-container">
+    <el-form :model="listQuery" size="mini" :inline="true">
+      <el-form-item label="时间">
+        <el-date-picker
+          v-model="listQuery.time"
+          value-format="timestamp"
+          type="datetimerange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          align="right">
+        </el-date-picker>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="getList()">查询</el-button>
+      </el-form-item>
+    </el-form>
     <el-table
       :data="list"
       size="mini"
-      border
-      :height="mixinHeight"
-      :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]">
+      height="calc(100% - 126px)"
+      border>
       <el-table-column
         v-for="(item, index) in listTitle"
         :key="index"
@@ -33,9 +29,9 @@
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <span v-if="item.property === 'btn'" class="center">
+          <div v-if="item.property === 'btn'" class="center">
             <i class="el-icon-more" @click="openDialog(scope.row)"></i>
-          </span>
+          </div>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>
       </el-table-column>
@@ -69,26 +65,26 @@
 </template>
 
 <script>
-import page from '@/mixins/page'
-import resize from '@/mixins/resize'
-import pickerOptions from '@/mixins/pickerOptions'
+import { page } from '@/mixins'
 import { getDate } from '@/utils'
 export default {
-  mixins: [page, resize, pickerOptions],
+  props: ['entityId'],
+  mixins: [page],
   data () {
     return {
       listQuery: {
-        time: []
+        time: [
+          new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 00:00:00`).getTime(),
+          new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 23:59:59`).getTime()
+        ]
       },
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '时间戳', width: 180 },
-        { property: 'entityName', label: '实体类型', width: 150 },
-        { property: 'entityName', label: '实体名称', width: 150 },
-        { property: 'userName', label: '账户', width: 200 },
-        { property: 'actionType', label: '类型', width: 200 },
-        { property: 'actionStatus', label: '状态', width: 250 },
-        { property: 'btn', label: '详情', width: 250 }
+        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'userName', label: '用户', width: 150 },
+        { property: 'actionType', label: '类型', width: 150 },
+        { property: 'actionStatus', label: '状态', width: 100 },
+        { property: 'btn', label: '详情', width: 100 }
       ],
       visible: false,
       form: {
@@ -98,9 +94,6 @@ export default {
     }
   },
   methods: {
-    resetForm (formName) {
-      this.$refs[formName].resetFields()
-    },
     openDialog (row) {
       this.visible = true
       this.form = {
@@ -109,19 +102,18 @@ export default {
       }
     },
     async getList () {
-      const res = await this.$api.getAuditLogsList({
+      const res = await this.$api.getEntityViewLogs({
         page: this.page - 1,
         pageSize: this.limit,
         sortProperty: 'createdTime',
         sortOrder: 'DESC',
-        startTime: (this.listQuery.time && this.listQuery.time[0]) || '',
-        endTime: (this.listQuery.time && this.listQuery.time[1]) || ''
-      })
+        startTime: this.listQuery.time && this.listQuery.time[0],
+        endTime: this.listQuery.time && this.listQuery.time[1]
+      }, this.entityId)
       this.list = res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime),
-        entityName: ele.entityId.entityType
+        createdTime: getDate(ele.createdTime)
       }))
-      this.total = res.data.data && res.data.data.length
+      this.total = res.data.totalElements
     }
   },
   created () {
@@ -130,5 +122,11 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss" scope>
+  .log-container {
+    height: 100%;
+    .el-form {
+      margin-bottom: 20px;
+    }
+  }
 </style>

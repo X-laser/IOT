@@ -44,9 +44,13 @@ http.interceptors.response.use(
     return response
   },
   err => {
-    if (String(err).indexOf('status code 401') !== -1) {
-      Message.error('登录过期')
-      router.push({ path: '/login' })
+    if (err.response) {
+      if (err.response.status === 401) {
+        Message.error('登录过期')
+        router.push({ path: '/login' })
+      } else {
+        Message.error(err.response.data.message)
+      }
     }
     return Promise.reject(err)
   }
