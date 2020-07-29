@@ -7,6 +7,7 @@ import { request } from '@/utils/request'
 export default {
   getDeviceInfo: params => request({ url: '/api/tenant/deviceInfos', params }),
   getDeviceTypes: _ => request({ url: '/api/device/types' }),
+  getDevices: params => request({ url: '/api/devices', params }),
   getDeviceCredentials: deviceId => request({ url: `/api/device/${deviceId}/credentials` }),
   getItemDeviceInfo: deviceId => request({ url: `/api/device/info/${deviceId}` }),
   postDeviceCredentials: params => request({ url: '/api/device/credentials', method: 'post', params }),

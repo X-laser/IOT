@@ -185,7 +185,7 @@ export default {
           this.$message.success(`${msg}成功`)
           this.$emit('submit')
           if (JSON.stringify(this.info) !== '{}') {
-            this.$router.push({ path: `/entity-views/${this.entityId}`, query: { title: this.form.name } })
+            this.$router.push({ path: `/entity-views/${this.$route.params.entityId}`, query: { title: this.form.name } })
           }
         }
       })

@@ -71,8 +71,8 @@ export const request = ({ url, method = 'get', params, baseURL = 'BASE_URL', tim
     baseURL: window.IP_CONFIG[baseURL],
     method,
     url,
-    params: method === 'get' && params,
-    data: method === 'post' && params,
+    params: (method === 'get' || method === 'delete') && params,
+    data: (method === 'post' && params) || null,
     timeout: timeout || 30000,
     isToken: isToken,
     isLoop: isLoop || false
