@@ -121,8 +121,8 @@ export default {
         startTime: time[0],
         endTime: time[1]
       }, this.entityId)
-      this.list = res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime)
+      this.list = res.data.data.map(ele => Object.assign(ele, {
+        createdTime: getDate({ timestamp: ele.createdTime })
       }))
       this.total = res.data.totalElements
     }

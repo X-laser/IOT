@@ -41,13 +41,23 @@
         </el-form>
         <el-table
           :data="list"
+          v-loading="loading"
+          :default-sort="{prop: 'createdTime', order: 'descending'}"
+          @sort-change="sortChange"
           size="mini"
           height="calc(100% - 94px)">
           <el-table-column
-            v-for="(item, index) in listTitle"
-            :key="index"
+            type="selection"
+            width="90">
+          </el-table-column>
+          <el-table-column
+            v-for="item in listTitle"
+            :key="item.label"
             :min-width="item.width"
             :label="item.label"
+            :sortable="item.sortable"
+            :prop="item.property"
+            :sort-orders="['ascending', 'descending']"
             align="center"
             show-overflow-tooltip>
             <template slot-scope="scope">
@@ -102,7 +112,8 @@ export default {
         title: [{ required: true, message: '标题不能为空', trigger: 'change' }]
       },
       listQuery: {
-        time: ''
+        time: '',
+        sortOrder: 'DESC'
       },
       list: [],
       listTitle: [
@@ -120,6 +131,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     openDialog (row) {
       this.visible = true
       this.logForm = {
@@ -170,18 +186,25 @@ export default {
       }
     },
     async getList () {
-      const res = await this.$api.getAuditLogsEntityDashboardList({
-        page: this.page - 1,
-        pageSize: this.limit,
-        sortProperty: 'createdTime',
-        sortOrder: 'DESC',
-        startTime: (this.listQuery.time && this.listQuery.time[0]) || '',
-        endTime: (this.listQuery.time && this.listQuery.time[1]) || ''
-      }, this.dashboardId)
-      this.list = (res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime)
-      }))) || []
-      this.total = res.data.totalElements
+      this.loading = true
+      try {
+        const time = this.listQuery.time || ['', '']
+        const res = await this.$api.getAuditLogsEntityDashboardList({
+          page: this.page - 1,
+          pageSize: this.limit,
+          sortProperty: 'createdTime',
+          sortOrder: this.listQuery.sortOrder,
+          startTime: time[0],
+          endTime: time[1]
+        }, this.dashboardId)
+        this.list = res.data.data.map(ele => Object.assign(ele, {
+          createdTime: getDate({ timestamp: ele.createdTime })
+        }))
+        this.total = res.data.totalElements
+      } catch (error) {
+        this.$message.error(error.response.data.message)
+      }
+      this.loading = false
     }
   },
   created () {

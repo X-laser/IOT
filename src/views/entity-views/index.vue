@@ -16,6 +16,9 @@
     </div>
     <el-table
       :data="list"
+      v-loading="loading"
+      :default-sort="{prop: 'createdTime', order: 'descending'}"
+      @sort-change="sortChange"
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
@@ -25,10 +28,13 @@
         width="90">
       </el-table-column>
       <el-table-column
-        v-for="(item, index) in listTitle"
-        :key="index"
+        v-for="item in listTitle"
+        :key="item.label"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -84,12 +90,13 @@ export default {
   data () {
     return {
       listQuery: {
-        type: ''
+        type: '',
+        sortOrder: 'DESC'
       },
       entityViewTypes: [],
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
         { property: 'name', label: '名称', width: 150 },
         { property: 'type', label: '实体视图类型', width: 150 },
         { property: 'customerTitle', label: '客户', width: 150 },
@@ -111,6 +118,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     save () {
       this.visible = false
       this.init()
@@ -190,26 +202,31 @@ export default {
       this.customerList = res.data.data
     },
     async getList () {
-      const res = await this.$api.getEntityViewList(Object.assign({
-        page: this.page - 1,
-        pageSize: this.limit,
-        sortProperty: 'createdTime',
-        sortOrder: 'DESC'
-      }, this.listQuery))
-      this.list = res.data.data.map(ele => {
-        const { customerIsPublic, customerTitle } = ele
-        return {
-          ...ele,
-          createdTime: getDate(ele.createdTime),
-          icon: {
-            public: !customerIsPublic && !customerTitle,
-            allocation: !customerTitle,
-            cancelAllocation: !customerIsPublic && customerTitle,
-            provide: customerIsPublic
+      this.loading = true
+      try {
+        const res = await this.$api.getEntityViewList(Object.assign({
+          page: this.page - 1,
+          pageSize: this.limit,
+          sortProperty: 'createdTime'
+        }, this.listQuery))
+        this.list = res.data.data.map(ele => {
+          const { customerIsPublic, customerTitle } = ele
+          return {
+            ...ele,
+            createdTime: getDate({ timestamp: ele.createdTime }),
+            icon: {
+              public: !customerIsPublic && !customerTitle,
+              allocation: !customerTitle,
+              cancelAllocation: !customerIsPublic && customerTitle,
+              provide: customerIsPublic
+            }
           }
-        }
-      })
-      this.total = res.data.totalElements
+        })
+        this.total = res.data.totalElements
+      } catch (error) {
+        this.$message.error(error.response.data.message)
+      }
+      this.loading = false
     },
     init () {
       this.getList()

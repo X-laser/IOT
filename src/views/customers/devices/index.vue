@@ -16,15 +16,25 @@
     </div>
     <el-table
       :data="list"
+      v-loading="loading"
+      :default-sort="{prop: 'createdTime', order: 'descending'}"
+      @sort-change="sortChange"
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
       @cell-click="cellClick">
       <el-table-column
-        v-for="(item, index) in listTitle"
-        :key="index"
+        type="selection"
+        width="90">
+      </el-table-column>
+      <el-table-column
+        v-for="item in listTitle"
+        :key="item.label"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -86,11 +96,12 @@ export default {
   data () {
     return {
       listQuery: {
-        type: ''
+        type: '',
+        sortOrder: 'DESC'
       },
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
         { property: 'name', label: '名称', width: 150 },
         { property: 'type', label: '设备类型', width: 150 },
         { property: 'label', label: '标签', width: 150 },
@@ -121,6 +132,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     async openDialog (type, params) {
       this.type = type
       if (type === 'credentials') {
@@ -194,17 +210,22 @@ export default {
       this.deviceList = res.data.data
     },
     async getList () {
-      const res = await this.$api.getCustomerDeviceList(Object.assign({
-        page: this.page - 1,
-        pageSize: this.limit,
-        sortProperty: 'createdTime',
-        sortOrder: 'DESC'
-      }, this.listQuery), this.customerId)
-      this.list = (res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime),
-        gateway: ele.additionalInfo.gateway || false
-      }))) || []
-      this.total = res.data.totalElements
+      this.loading = true
+      try {
+        const res = await this.$api.getCustomerDeviceList(Object.assign({
+          page: this.page - 1,
+          pageSize: this.limit,
+          sortProperty: 'createdTime'
+        }, this.listQuery), this.customerId)
+        this.list = res.data.data.map(ele => Object.assign(ele, {
+          createdTime: getDate({ timestamp: ele.createdTime }),
+          gateway: ele.additionalInfo.gateway || false
+        }))
+        this.total = res.data.totalElements
+      } catch (error) {
+        this.$message.error(error.response.data.message)
+      }
+      this.loading = false
     }
   },
   created () {

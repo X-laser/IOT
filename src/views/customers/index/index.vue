@@ -10,15 +10,25 @@
     </div>
     <el-table
       :data="list"
+      v-loading="loading"
+      :default-sort="{prop: 'createdTime', order: 'descending'}"
+      @sort-change="sortChange"
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
       @cell-click="cellClick">
       <el-table-column
-        v-for="(item, index) in listTitle"
-        :key="index"
+        type="selection"
+        width="90">
+      </el-table-column>
+      <el-table-column
+        v-for="item in listTitle"
+        :key="item.label"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -98,10 +108,12 @@ export default {
   mixins: [page, resize],
   data () {
     return {
-      listQuery: {},
+      listQuery: {
+        sortOrder: 'DESC'
+      },
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
         { property: 'name', label: '标题', width: 150 },
         { property: 'email', label: '邮箱', width: 150 },
         { property: 'country', label: '国家', width: 150 },
@@ -131,6 +143,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     del (row) {
       this.$confirm('小心！确认后,用户及其所有相关数据将不可恢复', `确定要删除用户'${row.name}'吗?`, {
         confirmButtonText: '确定',
@@ -173,16 +190,22 @@ export default {
       })
     },
     async getList () {
-      const res = await this.$api.getCustomersList({
-        page: this.page - 1,
-        pageSize: this.limit,
-        sortProperty: 'createdTime',
-        sortOrder: 'DESC'
-      })
-      this.list = (res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime)
-      }))) || []
-      this.total = res.data.totalElements
+      this.loading = true
+      try {
+        const res = await this.$api.getCustomersList({
+          page: this.page - 1,
+          pageSize: this.limit,
+          sortProperty: 'createdTime',
+          sortOrder: this.listQuery.sortOrder
+        })
+        this.list = res.data.data.map(ele => Object.assign(ele, {
+          createdTime: getDate({ timestamp: ele.createdTime })
+        }))
+        this.total = res.data.totalElements
+      } catch (error) {
+        this.$message.error(error.response.data.message)
+      }
+      this.loading = false
     }
   },
   created () {

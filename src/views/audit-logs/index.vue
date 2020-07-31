@@ -63,7 +63,7 @@
           <el-input type="textarea" autosize readonly v-model="form.actionData"></el-input>
         </el-form-item>
         <el-form-item label="失败详情" v-if="form.actionFailureDetails">
-          <el-input type="textarea" autosize readonly v-model="form.actionFailureDetails"></el-input>
+          <el-input type="textarea" :rows="10" readonly v-model="form.actionFailureDetails"></el-input>
         </el-form-item>
       </el-form>
       <div slot="footer" class="icloud-dialog-footer">
@@ -135,7 +135,7 @@ export default {
           endTime: time[1]
         })
         this.list = res.data.data.map(ele => Object.assign(ele, {
-          createdTime: getDate(ele.createdTime),
+          createdTime: getDate({ timestamp: ele.createdTime }),
           entityType: ele.entityId.entityType
         }))
         this.total = res.data.totalElements

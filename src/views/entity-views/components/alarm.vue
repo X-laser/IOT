@@ -108,7 +108,7 @@ export default {
           fetchOriginator: true
         })
         this.list = res.data.data.map(ele => Object.assign(ele, {
-          createdTime: getDate(ele.createdTime)
+          createdTime: getDate({ timestamp: ele.createdTime })
         }))
         this.total = res.data.totalElements
       } catch (error) {

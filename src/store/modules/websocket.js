@@ -1,3 +1,5 @@
+import { getToken } from '@/utils/token'
+
 const websocket = {
   state: {
     websocket: null,
@@ -33,7 +35,11 @@ const websocket = {
       console.log('websocket关闭')
     },
     // 数据发送
-    websocketsend ({ state }, params) {
+    websocketsend ({ state, dispatch }, params) {
+      if (!state.websocket) {
+        const wsUrl = `ws://10.10.14.200/api/ws/plugins/telemetry?token=${getToken()}`
+        dispatch('initWebSocket', wsUrl)
+      }
       let timer = null
       timer && clearTimeout(timer)
       timer = setTimeout(() => {
