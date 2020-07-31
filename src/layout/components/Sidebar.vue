@@ -8,11 +8,10 @@
 </template>
 
 <script>
-import { routerList } from '@/router'
 export default {
-  data () {
-    return {
-      sidebarList: routerList
+  computed: {
+    sidebarList () {
+      return this.$store.getters.permissionRouter
     }
   },
   methods: {

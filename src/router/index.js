@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import store from '../store'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 
@@ -14,17 +15,28 @@ Vue.use(VueRouter)
 const modules = require.context('./modules', false, /\.js$/)
 export const routerList = modules.keys().map(key => modules(key).default).sort((a, b) => a.index - b.index)
 
-const routes = [
-  {
-    path: '/login',
-    component: () => import('@/views/login')
-  },
-  ...routerList
-]
-
-const router = new VueRouter({
-  routes
+const createRouter = () => new VueRouter({
+  scrollBehavior: () => ({ y: 0 }),
+  routes: [
+    {
+      path: '/login',
+      component: () => import('@/views/login')
+    },
+    {
+      path: '*',
+      component: () => import('@/views/login')
+    }
+  ]
 })
+
+// 创建路由
+const router = createRouter()
+
+// 重置路由匹配正则
+export function resetRouter () {
+  const newRouter = createRouter()
+  router.matcher = newRouter.matcher // reset router
+}
 
 NProgress.configure({
   easing: 'ease', // 动画方式
@@ -47,3 +59,10 @@ router.afterEach(() => {
 })
 
 export default router
+
+const { authority } = JSON.parse(window.sessionStorage.getItem('userInfo')) || {}
+if (authority) {
+  store.commit('SET_PERMISSION_ROUTER', authority)
+} else {
+  store.commit('SET_PERMISSION_ROUTER')
+}

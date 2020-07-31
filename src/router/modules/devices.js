@@ -5,6 +5,7 @@ export default {
   path: '/devices',
   index: 5,
   component: Layout,
+  auth: ['TENANT_ADMIN', 'CUSTOMER_USER'],
   children: [
     {
       path: '',

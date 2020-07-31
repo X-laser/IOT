@@ -1,10 +1,10 @@
 <template>
   <div class="details-container">
     <div class="button-container">
-      <wx-button v-if="info.icon.public" type="warning" @click="open('public')">资产设为公开</wx-button>
-      <wx-button v-if="info.icon.allocation" type="warning" @click="visible = true">分配给客户</wx-button>
-      <wx-button v-if="info.icon.cancelAllocation" type="warning" @click="open('allocation')">取消分配客户</wx-button>
-      <wx-button v-if="info.icon.provide" type="warning" @click="open('private')">资产设为私有</wx-button>
+      <wx-button v-if="icon.public" type="warning" @click="open('public')">资产设为公开</wx-button>
+      <wx-button v-if="icon.allocation" type="warning" @click="visible = true">分配给客户</wx-button>
+      <wx-button v-if="icon.cancelAllocation" type="warning" @click="open('allocation')">取消分配客户</wx-button>
+      <wx-button v-if="icon.provide" type="warning" @click="open('private')">资产设为私有</wx-button>
       <wx-button type="warning" @click="open('delete')">删除资产</wx-button>
     </div>
     <form-info ref="info" :info="info"></form-info>
@@ -30,13 +30,11 @@
 <script>
 import { FormInfo } from './index.js'
 export default {
-  props: ['entityId'],
+  props: ['entityId', 'info'],
   components: { FormInfo },
   data () {
     return {
-      info: {
-        icon: {}
-      },
+      icon: {},
       visible: false,
       form: {
         id: ''
@@ -111,21 +109,14 @@ export default {
       })
       this.customerList = res.data.data
     },
-    async getEntityViewInfo () {
-      const { data } = await this.$api.getEntityViewInfo(this.entityId)
-      const { customerIsPublic, customerTitle } = data
-      this.info = {
-        ...data,
-        icon: {
-          public: !customerIsPublic && !customerTitle,
-          allocation: !customerTitle,
-          cancelAllocation: !customerIsPublic && customerTitle,
-          provide: customerIsPublic
-        }
-      }
-    },
     init () {
-      this.getEntityViewInfo()
+      const { customerIsPublic, customerTitle } = this.info
+      this.icon = {
+        public: !customerIsPublic && !customerTitle,
+        allocation: !customerTitle,
+        cancelAllocation: !customerIsPublic && customerTitle,
+        provide: customerIsPublic
+      }
       this.getCustomersList()
     }
   },

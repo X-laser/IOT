@@ -17,10 +17,13 @@
     <el-table
       :data="list"
       size="mini"
-      border
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
       @cell-click="cellClick">
+      <el-table-column
+        type="selection"
+        width="90">
+      </el-table-column>
       <el-table-column
         v-for="(item, index) in listTitle"
         :key="index"

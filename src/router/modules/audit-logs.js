@@ -4,6 +4,7 @@ export default {
   path: '/audit-logs',
   index: 9,
   component: Layout,
+  auth: ['TENANT_ADMIN'],
   children: [
     {
       path: '',

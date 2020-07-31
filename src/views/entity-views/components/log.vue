@@ -18,14 +18,18 @@
     </el-form>
     <el-table
       :data="list"
+      :default-sort="{prop: 'createdTime', order: 'descending'}"
+      @sort-change="sortChange"
       size="mini"
-      height="calc(100% - 126px)"
-      border>
+      height="calc(100% - 126px)">
       <el-table-column
         v-for="(item, index) in listTitle"
         :key="index"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -76,11 +80,12 @@ export default {
         time: [
           new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 00:00:00`).getTime(),
           new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 23:59:59`).getTime()
-        ]
+        ],
+        sortOrder: 'DESC'
       },
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '创建时间', width: 180 },
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
         { property: 'userName', label: '用户', width: 150 },
         { property: 'actionType', label: '类型', width: 150 },
         { property: 'actionStatus', label: '状态', width: 100 },
@@ -94,6 +99,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     openDialog (row) {
       this.visible = true
       this.form = {
@@ -102,13 +112,14 @@ export default {
       }
     },
     async getList () {
+      const time = this.listQuery.time || ['', '']
       const res = await this.$api.getEntityViewLogs({
         page: this.page - 1,
         pageSize: this.limit,
         sortProperty: 'createdTime',
-        sortOrder: 'DESC',
-        startTime: this.listQuery.time && this.listQuery.time[0],
-        endTime: this.listQuery.time && this.listQuery.time[1]
+        sortOrder: this.listQuery.sortOrder,
+        startTime: time[0],
+        endTime: time[1]
       }, this.entityId)
       this.list = res.data.data && res.data.data.map(ele => Object.assign(ele, {
         createdTime: getDate(ele.createdTime)

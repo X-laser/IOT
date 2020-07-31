@@ -13,13 +13,14 @@
     width: calc(100% - 40px);
   }
   .el-table {
+    border: 1px solid #D5D5D5;
     border-radius: 12px;
     background-color: #fff;
     .el-table__header {
       tr {
-        height: 61px;
+        height: 53px;
         th {
-          background-color: #fcfdfd;
+          background-color: #F5F6FA;
           .cell {
             color: #000;
             font-size: 16px;
@@ -33,7 +34,7 @@
     .el-table__body-wrapper {
       .el-table__body {
         .el-table__row {
-          height: 71px;
+          height: 58px;
           .cell {
             color: #000;
             font-size: 16px;
@@ -47,11 +48,11 @@
       }
     }
     .el-checkbox {
-      margin-left: calc((100% - 30px) / 2);
+      margin-left: calc((100% - 26px) / 2);
       .el-checkbox__input {
         .el-checkbox__inner {
-          height: 30px;
-          width: 30px;
+          height: 26px;
+          width: 26px;
           &:after {
             @extend %iconfont;
             content: '\e606';
@@ -59,7 +60,7 @@
             width: 0;
             height: 0;
             border: none;
-            font-size: 16px;
+            font-size: 14px;
             transform: rotate(0) scaleX(1);
             top: 5px;
           }

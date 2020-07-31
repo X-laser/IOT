@@ -45,11 +45,9 @@ http.interceptors.response.use(
   },
   err => {
     if (err.response) {
-      if (err.response.status === 401) {
+      if (err.response.status === 401 && err.response.config.url !== '/api/auth/login') {
         Message.error('登录过期')
         router.push({ path: '/login' })
-      } else {
-        Message.error(err.response.data.message)
       }
     }
     return Promise.reject(err)

@@ -10,7 +10,7 @@
     </div>
     <el-tabs type="border-card">
       <el-tab-pane v-for="item in tabPaneList" :key="item.label" :label="item.label">
-        <component :is="item.componentName" :entityId="entityId"></component>
+        <component :is="item.componentName" :entityId="entityId" :info="info"></component>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -21,7 +21,7 @@ import {
   DetailsInfo,
   Attribute,
   Telemetering,
-  Warning,
+  Alarm,
   Event,
   Relation,
   Log
@@ -32,7 +32,7 @@ export default {
     DetailsInfo,
     Attribute,
     Telemetering,
-    Warning,
+    Alarm,
     Event,
     Relation,
     Log
@@ -43,12 +43,22 @@ export default {
         { label: '详情', componentName: 'DetailsInfo' },
         { label: '属性', componentName: 'Attribute' },
         { label: '最新遥测', componentName: 'Telemetering' },
-        { label: '警告', componentName: 'Warning' },
+        { label: '警告', componentName: 'Alarm' },
         { label: '事件', componentName: 'Event' },
         { label: '关联', componentName: 'Relation' },
         { label: '审计日志', componentName: 'Log' }
-      ]
+      ],
+      info: {}
     }
+  },
+  methods: {
+    async getEntityViewInfo () {
+      const res = await this.$api.getEntityViewInfo(this.entityId)
+      this.info = res.data
+    }
+  },
+  created () {
+    this.getEntityViewInfo()
   }
 }
 </script>

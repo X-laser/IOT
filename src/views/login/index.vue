@@ -43,7 +43,7 @@ export default {
         try {
           await this.$store.dispatch('login', this.loginForm)
         } catch (error) {
-          console.log(error)
+          this.$message.error(error.response.data.message)
         }
         this.loading = false
       })

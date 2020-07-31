@@ -5,6 +5,7 @@ import { request } from '@/utils/request'
 
 export default {
   getToken: id => request({ url: `/api/user/${id}/token` }),
+  getUser: _ => request({ url: '/api/auth/user' }),
   getUserInfo: id => request({ url: `/api/user/${id}` }),
   getCustomersList: params => request({ url: '/api/customers', params }),
   getCustomersInfo: id => request({ url: `/api/customer/${id}` }),

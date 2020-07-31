@@ -21,15 +21,20 @@
     </div>
     <el-table
       :data="list"
+      v-loading="loading"
+      :default-sort="{prop: 'createdTime', order: 'descending'}"
+      @sort-change="sortChange"
       size="mini"
-      border
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]">
       <el-table-column
-        v-for="(item, index) in listTitle"
-        :key="index"
+        v-for="item in listTitle"
+        :key="item.label"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -78,12 +83,16 @@ export default {
   data () {
     return {
       listQuery: {
-        time: []
+        sortOrder: 'DESC',
+        time: [
+          new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 00:00:00`).getTime(),
+          new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 23:59:59`).getTime()
+        ]
       },
       list: [],
       listTitle: [
-        { property: 'createdTime', label: '时间戳', width: 180 },
-        { property: 'entityName', label: '实体类型', width: 150 },
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
+        { property: 'entityType', label: '实体类型', width: 150 },
         { property: 'entityName', label: '实体名称', width: 150 },
         { property: 'userName', label: '账户', width: 200 },
         { property: 'actionType', label: '类型', width: 200 },
@@ -98,6 +107,11 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {
+      const isDesc = order === 'descending'
+      this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
+      this.getList()
+    },
     resetForm (formName) {
       this.$refs[formName].resetFields()
     },
@@ -109,19 +123,26 @@ export default {
       }
     },
     async getList () {
-      const res = await this.$api.getAuditLogsList({
-        page: this.page - 1,
-        pageSize: this.limit,
-        sortProperty: 'createdTime',
-        sortOrder: 'DESC',
-        startTime: (this.listQuery.time && this.listQuery.time[0]) || '',
-        endTime: (this.listQuery.time && this.listQuery.time[1]) || ''
-      })
-      this.list = res.data.data && res.data.data.map(ele => Object.assign(ele, {
-        createdTime: getDate(ele.createdTime),
-        entityName: ele.entityId.entityType
-      }))
-      this.total = res.data.data && res.data.data.length
+      this.loading = true
+      try {
+        const time = this.listQuery.time || ['', '']
+        const res = await this.$api.getAuditLogsList({
+          page: this.page - 1,
+          pageSize: this.limit,
+          sortProperty: 'createdTime',
+          sortOrder: this.listQuery.sortOrder,
+          startTime: time[0],
+          endTime: time[1]
+        })
+        this.list = res.data.data.map(ele => Object.assign(ele, {
+          createdTime: getDate(ele.createdTime),
+          entityType: ele.entityId.entityType
+        }))
+        this.total = res.data.totalElements
+      } catch (error) {
+        this.$message.error(error.response.data.message)
+      }
+      this.loading = false
     }
   },
   created () {

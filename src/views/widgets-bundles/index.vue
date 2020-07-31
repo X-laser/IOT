@@ -10,7 +10,6 @@
     <el-table
       :data="list"
       size="mini"
-      border
       :height="mixinHeight - 20"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
       @cell-click="cellClick">

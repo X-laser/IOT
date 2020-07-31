@@ -1,11 +1,13 @@
 <template>
-  <div class="event-container">
+  <div class="alarm-container">
     <el-form :model="listQuery" size="mini" :inline="true">
-      <el-form-item label="事件类型">
-        <el-select v-model="listQuery.eventType" @change="getList">
-          <el-option label="错误" value="ERROR"></el-option>
-          <el-option label="生命周期事件" value="LC_EVENT"></el-option>
-          <el-option label="类型统计" value="STATS"></el-option>
+      <el-form-item label="警告状态">
+        <el-select v-model="listQuery.searchStatus" @change="getList">
+          <el-option label="全部" value="ANY"></el-option>
+          <el-option label="已激活" value="ACTIVE"></el-option>
+          <el-option label="已清除" value="CLEARED"></el-option>
+          <el-option label="已应答" value="ACK"></el-option>
+          <el-option label="未应答" value="UNACK"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="时间">
@@ -32,7 +34,7 @@
       size="mini"
       height="calc(100% - 88px)">
       <el-table-column
-        v-for="item in listTitle[listQuery.eventType]"
+        v-for="item in listTitle"
         :key="item.label"
         :min-width="item.width"
         :label="item.label"
@@ -67,7 +69,7 @@ export default {
   data () {
     return {
       listQuery: {
-        eventType: 'ERROR',
+        searchStatus: 'ANY',
         sortOrder: 'DESC',
         time: [
           new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 00:00:00`).getTime(),
@@ -75,27 +77,14 @@ export default {
         ]
       },
       list: [],
-      listTitle: {
-        ERROR: [
-          { property: 'createdTime', label: '事件时间', width: 180, sortable: true },
-          { property: 'server', label: '服务器', width: 150 },
-          { property: 'method', label: '方法', width: 150 },
-          { property: 'error', label: '错误', width: 150 }
-        ],
-        LC_EVENT: [
-          { property: 'createdTime', label: '事件时间', width: 180, sortable: true },
-          { property: 'server', label: '服务器', width: 150 },
-          { property: 'event', label: '事件', width: 150 },
-          { property: 'state', label: '状态', width: 150 },
-          { property: 'error', label: '错误', width: 150 }
-        ],
-        STATS: [
-          { property: 'createdTime', label: '事件时间', width: 180, sortable: true },
-          { property: 'server', label: '服务器', width: 150 },
-          { property: 'message', label: '消息处理', width: 150 },
-          { property: 'error', label: '错误发生', width: 150 }
-        ]
-      }
+      listTitle: [
+        { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
+        { property: 'server', label: '起因', width: 150 },
+        { property: 'method', label: '类型', width: 100 },
+        { property: 'error', label: '严重程度', width: 100 },
+        { property: 'error', label: '状态', width: 100 },
+        { property: 'error', label: '详情', width: 150 }
+      ]
     }
   },
   methods: {
@@ -108,14 +97,15 @@ export default {
       this.loading = true
       try {
         const time = this.listQuery.time || ['', '']
-        const res = await this.$api.getEvents('ENTITY_VIEW', this.entityId, this.listQuery.eventType, {
+        const res = await this.$api.getAlarms('ENTITY_VIEW', this.entityId, {
           page: this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime',
           sortOrder: this.listQuery.sortOrder,
-          tenantId: this.info.tenantId.id,
           startTime: time[0],
-          endTime: time[1]
+          endTime: time[1],
+          searchStatus: this.listQuery.searchStatus,
+          fetchOriginator: true
         })
         this.list = res.data.data.map(ele => Object.assign(ele, {
           createdTime: getDate(ele.createdTime)
@@ -139,7 +129,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .event-container {
+  .alarm-container {
     height: 100%;
   }
 </style>

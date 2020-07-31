@@ -5,6 +5,7 @@ export default {
   path: '/widgets-bundles',
   index: 7,
   component: Layout,
+  auth: ['SYS_ADMIN', 'TENANT_ADMIN'],
   children: [
     {
       path: '',

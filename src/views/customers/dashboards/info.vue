@@ -42,8 +42,7 @@
         <el-table
           :data="list"
           size="mini"
-          height="calc(100% - 94px)"
-          border>
+          height="calc(100% - 94px)">
           <el-table-column
             v-for="(item, index) in listTitle"
             :key="index"

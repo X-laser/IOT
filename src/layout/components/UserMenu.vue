@@ -7,21 +7,40 @@
       </el-dropdown-menu>
     </el-dropdown>
     <div class="account">
-      <span class="username">{{ $store.getters.userInfo.name }}</span>
-      <span class="user-author">{{ $store.getters.userInfo.authority }}</span>
+      <span class="username">{{`${firstName} ${lastName}`}}</span>
+      <span class="user-author">{{ authority }}</span>
     </div>
   </div>
 </template>
 
 <script>
 export default {
+  data () {
+    return {
+      userType: {
+        TENANT_ADMIN: '租户管理员',
+        SYSTEM_ADMIN: '系统管理员',
+        CUSTOMER_USER: '顾客用户'
+      }
+    }
+  },
+  computed: {
+    firstName () {
+      return this.$store.getters.userInfo.firstName
+    },
+    lastName () {
+      return this.$store.getters.userInfo.lastName
+    },
+    authority () {
+      return this.userType[this.$store.getters.userInfo.authority]
+    }
+  },
   methods: {
     async handleCommand (command) {
       if (command === 'logout') {
         const res = await this.$api.logout()
         if (res.status === 200) {
           this.$store.dispatch('logout')
-          this.$router.push({ path: '/login' })
         }
       }
     }

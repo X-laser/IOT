@@ -5,6 +5,7 @@ export default {
   path: '/rule-chains',
   index: 2,
   component: Layout,
+  auth: ['SYS_ADMIN', 'TENANT_ADMIN'],
   children: [
     {
       path: '',

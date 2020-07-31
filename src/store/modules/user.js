@@ -10,7 +10,11 @@ const user = {
     /** 设置用户信息 */
     SET_USER_INFO: (state, userInfo) => {
       state.userInfo = userInfo
-      window.sessionStorage.setItem('userInfo', JSON.stringify(userInfo))
+      if (userInfo) {
+        window.sessionStorage.setItem('userInfo', JSON.stringify(userInfo))
+      } else {
+        window.sessionStorage.removeItem('userInfo')
+      }
     },
     /** 设置token */
     SET_TOKEN: (state, token) => {
@@ -22,14 +26,17 @@ const user = {
       return new Promise(async (resolve, reject) => {
         try {
           const res = await api.login({ username, password })
-          console.log(res)
           if (res.status === 200) {
-            commit('SET_USER_INFO', {
-              name: username,
-              password: checkedPsd ? password : ''
-            })
             setToken(res.data.token)
-            router.push({ path: '/' })
+            const userInfo = await api.getUser()
+            if (userInfo.status === 200) {
+              commit('SET_USER_INFO', {
+                ...userInfo.data,
+                password: checkedPsd ? password : ''
+              })
+              commit('SET_PERMISSION_ROUTER', userInfo.data.authority)
+              router.push({ path: '/' })
+            }
           }
           resolve(res)
         } catch (error) {
@@ -37,9 +44,11 @@ const user = {
         }
       })
     },
-    logout () {
+    logout ({ commit }) {
       return new Promise(resolve => {
         removeToken()
+        commit('SET_PERMISSION_ROUTER')
+        commit('SET_USER_INFO')
         resolve()
       })
     }

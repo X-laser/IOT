@@ -5,6 +5,7 @@ export default {
   path: '/entity-views',
   index: 6,
   component: Layout,
+  auth: ['TENANT_ADMIN', 'CUSTOMER_USER'],
   children: [
     {
       path: '',

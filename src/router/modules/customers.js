@@ -5,6 +5,7 @@ export default {
   path: '/customers',
   index: 3,
   component: Layout,
+  auth: ['TENANT_ADMIN'],
   children: [
     {
       path: '',

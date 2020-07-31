@@ -16,12 +16,20 @@
       :data="list"
       size="mini"
       height="calc(100% - 126px)"
-      border>
+      :default-sort="{prop: 'type', order: 'descending'}"
+      @sort-change="sortChange">
       <el-table-column
-        v-for="(item, index) in listTitle"
-        :key="index"
+        type="selection"
+        width="90">
+      </el-table-column>
+      <el-table-column
+        v-for="item in listTitle[listQuery.id]"
+        :key="item.label"
         :min-width="item.width"
         :label="item.label"
+        :sortable="item.sortable"
+        :prop="item.property"
+        :sort-orders="['ascending', 'descending']"
         align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
@@ -96,7 +104,20 @@ export default {
         id: 'to'
       },
       list: [],
-      listTitle: [],
+      listTitle: {
+        from: [
+          { property: 'type', label: '类型', width: 180, sortable: true },
+          { property: 'entityType', label: '到实体类型', width: 150 },
+          { property: 'toName', label: '到实体名称', width: 150 },
+          { property: 'btn', label: '详情', width: 100 }
+        ],
+        to: [
+          { property: 'type', label: '类型', width: 180, sortable: true },
+          { property: 'entityType', label: '从实体类型', width: 150 },
+          { property: 'fromName', label: '从实体名称', width: 150 },
+          { property: 'btn', label: '详情', width: 100 }
+        ]
+      },
       title: '',
       visible: false,
       form: {
@@ -115,6 +136,7 @@ export default {
     }
   },
   methods: {
+    sortChange ({ order }) {},
     submit () {
       this.$refs.form.validate(async valid => {
         if (!valid) return false
@@ -274,12 +296,6 @@ export default {
         fromType: 'ENTITY_VIEW'
       }
       const isFrom = this.listQuery.id === 'from'
-      this.listTitle = [
-        { property: 'type', label: '类型', width: 180 },
-        { property: 'entityType', label: `${isFrom ? '从' : '到'}实体类型`, width: 150 },
-        { property: `${isFrom ? 'toName' : 'fromName'}`, label: `${isFrom ? '从' : '到'}实体名称`, width: 150 },
-        { property: 'btn', label: '详情', width: 100 }
-      ]
       if (isFrom) {
         delete params.toId
         delete params.toType
