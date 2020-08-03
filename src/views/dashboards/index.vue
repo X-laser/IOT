@@ -225,6 +225,8 @@ export default {
       this.info = info
       this.tplType = tplType
       this.title = tplType === 'add' ? '添加仪表板' : '将资产分配给客户'
+      const { assignedCustomers } = this.info || []
+      this.form.id = assignedCustomers.map(ele => ele.customerId.id)
       this.visible = true
     },
     sortChange ({ order }) {
@@ -257,10 +259,11 @@ export default {
         })
         this.list = res.data.data.map(ele => {
           const isPrivate = !(!ele.assignedCustomers || !ele.assignedCustomers.some(item => item.public === true))
+          const customerName = (ele.assignedCustomers || []).filter(ele => ele.public === false).map(ele => ele.title).join(',')
           return {
             ...ele,
             createdTime: getDate({ timestamp: ele.createdTime }),
-            customerName: ele.assignedCustomers && ele.assignedCustomers.map(ele => ele.title).join(','),
+            customerName,
             private: isPrivate
           }
         })

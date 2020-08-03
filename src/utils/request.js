@@ -2,6 +2,7 @@ import axios from 'axios'
 import { tokenKey, getToken } from '@/utils/token'
 import { Message } from 'element-ui'
 import router from '@/router'
+const isProduction = process.env.NODE_ENV === 'production'
 
 // create an axios instance
 const http = axios.create()
@@ -66,9 +67,8 @@ http.interceptors.response.use(
  */
 export const request = ({ url, method = 'get', params, baseURL = 'BASE_URL', timeout, isToken = true, isLoop }) => {
   return http({
-    baseURL: window.IP_CONFIG[baseURL],
     method,
-    url,
+    url: isProduction ? `${window.IP_CONFIG[baseURL]}${url}` : `${baseURL}${url}`,
     params: (method === 'get' || method === 'delete') && params,
     data: (method === 'post' && params) || null,
     timeout: timeout || 30000,

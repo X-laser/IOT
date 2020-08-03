@@ -18,14 +18,26 @@ export default {
           component: () => import('@/views/widgets-bundles')
         },
         {
-          path: ':id/widget-types',
+          path: ':id',
           meta: {
             breadcrumb: [
               { title: '部件库', path: '/widgets-bundles' },
               { title: '', path: '/widgets-bundles/:id' }
             ]
           },
-          component: () => import('@/views/widgets-bundles/widget-types')
+          component: () => import('@/views/widgets-bundles/details'),
+          props: true
+        },
+        {
+          path: ':id/widget-types',
+          meta: {
+            breadcrumb: [
+              { title: '部件库', path: '/widgets-bundles' },
+              { title: '', path: '/widgets-bundles/:id/widget-types' }
+            ]
+          },
+          component: () => import('@/views/widgets-bundles/widget-types'),
+          props: true
         }
       ]
     }

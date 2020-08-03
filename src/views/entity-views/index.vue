@@ -39,11 +39,11 @@
         show-overflow-tooltip>
         <template slot-scope="scope">
           <div v-if="item.property === 'btn'" class="center">
-            <el-button v-if="scope.row.icon.public" type="text" @click="open(scope.row, 'public')">资产设为公开</el-button>
-            <el-button v-if="scope.row.icon.allocation" type="text" @click="openDialog('allocation', scope.row)">分配给客户</el-button>
-            <el-button v-if="scope.row.icon.cancelAllocation" type="text" @click="open(scope.row, 'allocation')">取消分配客户</el-button>
-            <el-button v-if="scope.row.icon.provide" type="text" @click="open(scope.row, 'private')">资产设为私有</el-button>
-            <el-button type="text" @click="open(scope.row, 'delete')">删除</el-button>
+            <el-button v-if="scope.row.icon.public" type="primary" size="mini" @click="open(scope.row, 'public')">资产设为公开</el-button>
+            <el-button v-if="scope.row.icon.allocation" type="primary" size="mini" @click="openDialog('allocation', scope.row)">分配给客户</el-button>
+            <el-button v-if="scope.row.icon.cancelAllocation" type="primary" size="mini" @click="open(scope.row, 'allocation')">取消分配客户</el-button>
+            <el-button v-if="scope.row.icon.provide" type="primary" size="mini" @click="open(scope.row, 'private')">资产设为私有</el-button>
+            <el-button type="primary" size="mini" @click="open(scope.row, 'delete')">删除</el-button>
           </div>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>

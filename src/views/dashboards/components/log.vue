@@ -72,7 +72,7 @@
 import { page } from '@/mixins'
 import { getDate } from '@/utils'
 export default {
-  props: ['entityId'],
+  props: ['id'],
   mixins: [page],
   data () {
     return {
@@ -120,7 +120,7 @@ export default {
         sortOrder: this.listQuery.sortOrder,
         startTime: time[0],
         endTime: time[1]
-      }, 'ENTITY_VIEW', this.entityId)
+      }, 'DASHBOARD', this.id)
       this.list = res.data.data.map(ele => Object.assign(ele, {
         createdTime: getDate({ timestamp: ele.createdTime })
       }))

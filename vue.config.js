@@ -1,5 +1,26 @@
 const isProduction = process.env.NODE_ENV === 'production'
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
+const { proxyIp } = require('./src/settings')
+
+const proxy = {
+  // sass调试接口
+  '/sassmeister': {
+    target: 'https://www.sassmeister.com',
+    changeOrigin: true,
+    pathRewrite: {
+      '^/sassmeister': ''
+    }
+  }
+}
+for (const key in proxyIp) {
+  proxy[`/${key}`] = {
+    target: proxyIp[key],
+    changeOrigin: true,
+    pathRewrite: {
+      [`^/${key}`]: ''
+    }
+  }
+}
 
 module.exports = {
   // 部署应用时的基本 URL
@@ -27,15 +48,7 @@ module.exports = {
     open: true,
     host: '0.0.0.0',
     port: 8080,
-    proxy: {
-      '/sassmeister': {
-        target: 'https://www.sassmeister.com',
-        changeOrigin: true,
-        pathRewrite: {
-          '^/sassmeister': ''
-        }
-      }
-    }
+    proxy
   },
   configureWebpack: {
     resolve: {
