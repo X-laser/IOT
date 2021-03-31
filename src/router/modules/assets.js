@@ -14,7 +14,10 @@ export default {
       children: [
         {
           path: '',
-          meta: { breadcrumb: [{ title: '资产', path: '/assets' }] },
+          meta: {
+            cashComponentName: 'Assets',
+            breadcrumb: [{ title: '资产', path: '/assets' }]
+          },
           component: () => import('@/views/assets')
         },
         {

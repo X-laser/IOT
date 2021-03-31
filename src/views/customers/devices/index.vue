@@ -1,7 +1,11 @@
 <template>
   <div class="app-container" ref="appContainer" v-resize="mixinResize">
+    <div class="icon-container">
+      <wx-button type="primary" icon="el-icon-plus" circle @click="openDialog('add')"></wx-button>
+      <wx-button v-if="selection.length" type="primary" icon="icon-remove" circle @click="deleteMore"></wx-button>
+    </div>
     <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
+      <el-form :model="listQuery" class="filter-container-form" size="medium" :inline="true">
         <el-form-item label="设备类型">
           <el-select v-model="listQuery.type">
             <el-option label="全部" value=""></el-option>
@@ -9,12 +13,12 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
-          <el-button type="primary" @click="openDialog('add')">添加</el-button>
+          <el-button type="primary" @click="getList(listQuery)">查询</el-button>
         </el-form-item>
       </el-form>
     </div>
     <el-table
+      ref="table"
       :data="list"
       v-loading="loading"
       :default-sort="{prop: 'createdTime', order: 'descending'}"
@@ -22,10 +26,13 @@
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
-      @cell-click="cellClick">
+      @cell-click="cellClick"
+      @selection-change="handleSelectionChange"
+      :row-key="row => row.id.id">
       <el-table-column
         type="selection"
-        width="90">
+        width="90"
+        :reserve-selection="true">
       </el-table-column>
       <el-table-column
         v-for="item in listTitle"
@@ -35,12 +42,11 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <span v-if="item.property === 'btn'" class="center">
-            <el-button type="primary" size="mini" @click="remove(scope.row)">取消分配用户</el-button>
-            <el-button type="primary" size="mini" @click="openDialog('credentials', scope.row)">管理凭据</el-button>
+          <span v-if="item.property === 'btn'" >
+            <el-button type="text" @click="remove(scope.row)">取消分配用户</el-button>
+            <el-button type="text" @click="openDialog('credentials', scope.row)">管理凭据</el-button>
           </span>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>
@@ -62,8 +68,15 @@
       :visible.sync="visible"
       :title="title">
       <el-form v-if="type === 'add'" ref="form" :model="form" :rules="rules">
-        <el-form-item label="实体列表" prop="id">
-          <el-select multiple v-model="form.id">
+        <el-form-item label="请选择要分配给客户的设备" prop="id">
+          <el-select
+            v-model="form.id"
+            multiple
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="remoteMethod"
+            @focus="remoteMethod()">
             <el-option v-for="item in deviceList" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
           </el-select>
         </el-form-item>
@@ -75,7 +88,7 @@
             <el-option label="X.509 Certificate" value="X509_CERTIFICATE"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="RSA公钥" :prop="credentialsForm.credentialsType === 'ACCESS_TOKEN' ? 'credentialsId' : 'credentialsValue'">
+        <el-form-item :label="credentialsForm.credentialsType === 'ACCESS_TOKEN' ? '访问令牌' : 'RSA公钥'" :prop="credentialsForm.credentialsType === 'ACCESS_TOKEN' ? 'credentialsId' : 'credentialsValue'">
           <el-input v-model="credentialsForm[credentialsForm.credentialsType === 'ACCESS_TOKEN' ? 'credentialsId' : 'credentialsValue']"></el-input>
         </el-form-item>
       </el-form>
@@ -93,8 +106,10 @@ import { getDate } from '@/utils'
 export default {
   props: ['customerId'],
   mixins: [page, resize],
+  name: 'CustomerDevices',
   data () {
     return {
+      pageTitle: '',
       listQuery: {
         type: '',
         sortOrder: 'DESC'
@@ -108,6 +123,7 @@ export default {
         { property: 'gateway', label: '是网关', width: 150 },
         { property: 'btn', label: '操作', width: 250 }
       ],
+      selection: [],
       visible: false,
       title: '',
       type: '',
@@ -116,7 +132,7 @@ export default {
         id: []
       },
       rules: {
-        id: [{ required: true, message: '实体列表不能为空', trigger: 'change' }]
+        id: [{ required: true, message: '要分配给客户的设备不能为空', trigger: 'change' }]
       },
       deviceTypeList: [],
       deviceList: [],
@@ -127,11 +143,32 @@ export default {
       },
       credentialsRules: {
         credentialsId: [{ required: true, message: '访问令牌不能为空', trigger: 'change' }],
-        credentialsValue: [{ required: true, message: '访问令牌不能为空', trigger: 'change' }]
+        credentialsValue: [{ required: true, message: 'RSA公钥不能为空', trigger: 'change' }]
       }
     }
   },
   methods: {
+    handleSelectionChange (val) {
+      this.selection = val
+    },
+    async deleteMore () {
+      this.$confirm('确认后,所有选定的设备将被取消分配,并且客户将无法访问', `确定要删除${this.selection.length}设备吗?`, {
+        confirmButtonText: '是',
+        cancelButtonText: '否'
+      }).then(async _ => {
+        try {
+          await Promise.all([
+            ...this.selection.map(item => this.$api.deleteCustomerDevice(item.id.id))
+          ])
+          this.$message.success('操作成功')
+          this.page = 1
+          this.getList()
+          this.$refs.table.clearSelection()
+        } catch (error) {
+          console.log(error)
+        }
+      }).catch(() => {})
+    },
     sortChange ({ order }) {
       const isDesc = order === 'descending'
       this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
@@ -158,23 +195,21 @@ export default {
         if (!valid) return false
         if (this.type === 'add') {
           await Promise.all([
-            this.form.id.map(item => this.$api.postCustomerDevice(this.customerId, item))
+            ...this.form.id.map(item => this.$api.postCustomerDevice(this.customerId, item))
           ])
         } else {
-          const res = await this.$api.postDeviceCredentials({
+          await this.$api.postDeviceCredentials({
             ...this.credentialsInfo,
             ...this.credentialsForm
           })
-          if (res.status === 200) {
-            this.$message.success('操作成功')
-          }
+          this.$message.success('操作成功')
         }
         this.visible = false
         this.getList()
       })
     },
     cellClick (row, column) {
-      if (column.label !== '操作') {
+      if (column.label !== '操作' && column.type !== 'selection') {
         this.$router.push({ path: `/customers/${this.customerId}/devices/${row.id.id}`, query: { title: row.name } })
       }
     },
@@ -186,52 +221,58 @@ export default {
         const res = await this.$api.deleteCustomerDevice(row.id.id)
         if (res.status === 200) {
           this.$message.success('操作成功')
+          this.$refs.table.clearSelection()
           this.getList()
         }
       }).catch(() => {})
     },
-    resetForm (formName) {
-      this.$refs[formName].resetFields()
-    },
     async getDeviceTypes () {
       const res = await this.$api.getDeviceTypes()
-      if (res.status === 200) {
-        this.deviceTypeList = res.data
-      }
+      this.deviceTypeList = res.data
     },
-    async getDeviceInfos () {
-      const res = await this.$api.getDeviceInfo({
-        pageSize: 999999,
+    async remoteMethod (value) {
+      const res = await this.$api.getTenantDeviceInfos({
+        pageSize: 50,
         page: 0,
         sortProperty: 'name',
         sortOrder: 'ASC',
-        type: ''
+        type: '',
+        textSearch: value
       })
       this.deviceList = res.data.data
     },
-    async getList () {
+    async getList (params) {
       this.loading = true
       try {
-        const res = await this.$api.getCustomerDeviceList(Object.assign({
-          page: this.page - 1,
+        const res = await this.$api.getCustomerDeviceLists(Object.assign({
+          page: params ? 0 : this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime'
         }, this.listQuery), this.customerId)
         this.list = res.data.data.map(ele => Object.assign(ele, {
           createdTime: getDate({ timestamp: ele.createdTime }),
-          gateway: ele.additionalInfo.gateway || false
+          gateway: (ele.additionalInfo && ele.additionalInfo.gateway) || false
         }))
         this.total = res.data.totalElements
       } catch (error) {
-        this.$message.error(error.response.data.message)
+        console.log(error)
       }
       this.loading = false
+    },
+    async getCustomersInfo () {
+      try {
+        const { data } = await this.$api.getCustomersInfo(this.customerId)
+        this.pageTitle = data.title
+      } catch (error) {
+        console.log(error)
+      }
     }
   },
-  created () {
+  activated () {
     this.getList()
     this.getDeviceTypes()
-    this.getDeviceInfos()
+    this.getCustomersInfo()
+    this.$refs.table.clearSelection()
   },
   watch: {
     visible (n) {

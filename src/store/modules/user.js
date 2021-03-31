@@ -15,30 +15,20 @@ const user = {
       } else {
         window.sessionStorage.removeItem('userInfo')
       }
-    },
-    /** 设置token */
-    SET_TOKEN: (state, token) => {
-      state.token = token
     }
   },
   actions: {
-    login ({ commit }, { username, password, checkedPsd }) {
+    login ({ commit, getters }, { username, password }) {
       return new Promise(async (resolve, reject) => {
         try {
-          const res = await api.login({ username, password })
-          if (res.status === 200) {
-            setToken(res.data.token)
-            const userInfo = await api.getUser()
-            if (userInfo.status === 200) {
-              commit('SET_USER_INFO', {
-                ...userInfo.data,
-                password: checkedPsd ? password : ''
-              })
-              commit('SET_PERMISSION_ROUTER', userInfo.data.authority)
-              router.push({ path: '/' })
-            }
-          }
-          resolve(res)
+          const result = await api.login({ username, password })
+          const { token, refreshToken } = result.data
+          setToken(token, refreshToken)
+          const userInfo = await api.getUser()
+          commit('SET_USER_INFO', userInfo.data)
+          commit('SET_PERMISSION_ROUTER', userInfo.data.authority)
+          router.push({ path: getters.permissionRouter[0].path })
+          resolve(result)
         } catch (error) {
           reject(error)
         }

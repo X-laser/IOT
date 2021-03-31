@@ -10,14 +10,38 @@ export default {
       required: true
     }
   },
+  data () {
+    return {
+      echarts: null
+    }
+  },
   methods: {
     init () {
-      const echarts = this.$echarts.init(this.$refs.chart)
-      echarts.setOption(this.option)
+      if (!this.echarts) {
+        this.echarts = this.$echarts.init(this.$refs.chart)
+      }
+      this.echarts.on('datazoom', params => {
+        this.option.dataZoom.forEach(item => {
+          item.start = params.start
+          item.end = params.end
+        })
+      })
+      this.echarts.setOption(this.option)
     }
   },
   mounted () {
     this.init()
+  },
+  beforeUpdate () {
+    this.echarts = null
+  },
+  watch: {
+    option: {
+      deep: true,
+      handler () {
+        this.init()
+      }
+    }
   }
 }
 </script>

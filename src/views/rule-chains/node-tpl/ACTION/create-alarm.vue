@@ -8,7 +8,7 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="警报详细信息生成器" prop="alarmDetailsBuildJs" class="js-container">
+    <el-form-item label="告警详情编译器" prop="alarmDetailsBuildJs" class="js-container">
       <span>function Details (msg, metadata, msgType) {</span>
       <Editor language="javascript"
         :codes="form.alarmDetailsBuildJs"
@@ -16,7 +16,7 @@
       <span>}</span>
     </el-form-item>
     <el-form-item>
-      <wx-button type="primary" @click="test">测试详细信息功能</wx-button>
+      <el-button type="primary" size="mini" @click="openTestScript()">测试详细信息功能</el-button>
     </el-form-item>
     <el-form-item prop="useMessageAlarmData">
       <el-checkbox v-model="form.useMessageAlarmData">使用消息警报数据</el-checkbox>
@@ -27,7 +27,7 @@
           <el-input v-model="form.alarmType"></el-input>
           <span class="desc">类型模式,使用 ${metaKeyName} 替换元数据中的变量</span>
         </el-form-item>
-        <el-form-item label="警报严重性" prop="severity">
+        <el-form-item label="告警等级" prop="severity">
           <el-select v-model="form.severity">
             <el-option label="危险" value="CRITICAL"></el-option>
             <el-option label="重要" value="MAJOR"></el-option>
@@ -42,22 +42,22 @@
       </el-form-item>
     </template>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
+    <test-script ref="testScript" title="测试详细信息功能"></test-script>
   </el-form>
 </template>
 
 <script>
 import Editor from '@/components/Editor'
+import TestScript from '../test-script'
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
-  components: { Editor },
+  name: 'CreateAlarm',
+  props: ['nodeInfo', 'configurationDescriptor'],
+  components: { Editor, TestScript },
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
         alarmDetailsBuildJs: '',
@@ -76,8 +76,21 @@ export default {
     }
   },
   methods: {
-    test () {
-      alert('测试功能待开发')
+    openTestScript () {
+      this.$refs.testScript.openDialog({
+        msg: JSON.stringify({
+          temperature: 22.4,
+          humidity: 78
+        }, null, 2),
+        script: this.form.alarmDetailsBuildJs,
+        metaData: [
+          { key: 'deviceType', value: 'default' },
+          { key: 'deviceName', value: 'Test Device' },
+          { key: 'ts', value: new Date().getTime() }
+        ],
+        scriptType: 'json',
+        funName: 'Details'
+      })
     },
     submit () {
       this.$refs.form.validate(valid => {
@@ -95,29 +108,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { alarmDetailsBuildJs, alarmType, severity, propagate, useMessageAlarmData } = this.nodeInfo.configuration || {}
-      const defaultAlarmDetailsBuildJs = 'var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;'
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        alarmDetailsBuildJs: JSON.stringify(this.nodeInfo) === '{}' ? defaultAlarmDetailsBuildJs : alarmDetailsBuildJs,
-        alarmType: JSON.stringify(this.nodeInfo) === '{}' ? 'General Alarm' : alarmType,
-        severity,
-        propagate,
-        useMessageAlarmData,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -8,23 +8,23 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="父模板" prop="fromTemplate">
+    <el-form-item label="发件人模板" prop="fromTemplate">
       <el-input v-model="form.fromTemplate"></el-input>
       <span class="desc">从地址模板中,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
-    <el-form-item label="子模板" prop="toTemplate">
+    <el-form-item label="接受人模板" prop="toTemplate">
       <el-input v-model="form.toTemplate"></el-input>
       <span class="desc">用逗号分隔的地址列表,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
-    <el-form-item label="抄送模板" prop="ccTemplate">
+    <el-form-item label="抄送者模板" prop="ccTemplate">
       <el-input v-model="form.ccTemplate"></el-input>
       <span class="desc">用逗号分隔的地址列表,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
-    <el-form-item label="密件抄送模板" prop="bccTemplate">
+    <el-form-item label="密件抄送人模板" prop="bccTemplate">
       <el-input v-model="form.bccTemplate"></el-input>
       <span class="desc">用逗号分隔的地址列表,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
-    <el-form-item label="主题模板" prop="subjectTemplate">
+    <el-form-item label="邮件标题模板" prop="subjectTemplate">
       <el-input v-model="form.subjectTemplate"></el-input>
       <span class="desc">邮件主题模板,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
@@ -33,20 +33,18 @@
       <span class="desc">邮件正文模板,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'ToEmail',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -85,29 +83,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { fromTemplate, toTemplate, ccTemplate, bccTemplate, subjectTemplate, bodyTemplate } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        fromTemplate: fromTemplate || 'info@testmail.org',
-        toTemplate: toTemplate || '$' + '{userEmail}',
-        ccTemplate,
-        bccTemplate,
-        subjectTemplate: subjectTemplate || 'Device ' + '$' + '{deviceType} temperature high',
-        bodyTemplate: bodyTemplate || 'Device ' + '$' + '{deviceName} has high temperature ' + '$' + '{temp}',
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

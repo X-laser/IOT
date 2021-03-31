@@ -1,7 +1,11 @@
 <template>
   <div class="app-container" ref="appContainer" v-resize="mixinResize">
+    <div class="icon-container" v-if="!isCustomer">
+      <wx-button type="primary" icon="icon-add" circle @click="openDialog('add')"></wx-button>
+      <wx-button v-if="selection.length" type="primary" icon="icon-remove" circle @click="deleteMore"></wx-button>
+    </div>
     <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
+      <el-form :model="listQuery" class="filter-container-form" size="medium" :inline="true">
         <el-form-item label="实体视图类型">
           <el-select v-model="listQuery.type">
             <el-option label="所有" value=""></el-option>
@@ -9,12 +13,15 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
-          <el-button type="primary" @click="openDialog('add')">添加</el-button>
+          <el-input placeholder="搜索名称" v-model="listQuery.textSearch" @keyup.enter.native="getList()"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="getList(listQuery)">查询</el-button>
         </el-form-item>
       </el-form>
     </div>
     <el-table
+      ref="table"
       :data="list"
       v-loading="loading"
       :default-sort="{prop: 'createdTime', order: 'descending'}"
@@ -22,32 +29,36 @@
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
-      @cell-click="cellClick">
+      @cell-click="cellClick"
+      @selection-change="handleSelectionChange"
+      :row-key="row => row.id.id">
       <el-table-column
         type="selection"
-        width="90">
+        width="90"
+        :reserve-selection="true">
       </el-table-column>
-      <el-table-column
-        v-for="item in listTitle"
-        :key="item.label"
-        :min-width="item.width"
-        :label="item.label"
-        :sortable="item.sortable"
-        :prop="item.property"
-        :sort-orders="['ascending', 'descending']"
-        align="center"
-        show-overflow-tooltip>
-        <template slot-scope="scope">
-          <div v-if="item.property === 'btn'" class="center">
-            <el-button v-if="scope.row.icon.public" type="primary" size="mini" @click="open(scope.row, 'public')">资产设为公开</el-button>
-            <el-button v-if="scope.row.icon.allocation" type="primary" size="mini" @click="openDialog('allocation', scope.row)">分配给客户</el-button>
-            <el-button v-if="scope.row.icon.cancelAllocation" type="primary" size="mini" @click="open(scope.row, 'allocation')">取消分配客户</el-button>
-            <el-button v-if="scope.row.icon.provide" type="primary" size="mini" @click="open(scope.row, 'private')">资产设为私有</el-button>
-            <el-button type="primary" size="mini" @click="open(scope.row, 'delete')">删除</el-button>
-          </div>
-          <span v-else>{{ scope.row[item.property] }}</span>
-        </template>
-      </el-table-column>
+      <template v-for="item in listTitle">
+        <el-table-column
+          v-if="isCustomer ? item.property !== 'btn' && item.property !== 'customerTitle' : true"
+          :key="item.label"
+          :min-width="item.width"
+          :label="item.label"
+          :sortable="item.sortable"
+          :prop="item.property"
+          :sort-orders="['ascending', 'descending']"
+          show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div v-if="item.property === 'btn'" >
+              <!-- <el-button v-if="scope.row.icon.public" type="text" @click="open(scope.row, 'public')">资产设为公开</el-button> -->
+              <el-button v-if="scope.row.icon.allocation" type="text" @click="openDialog('allocation', scope.row)">分配给客户</el-button>
+              <el-button v-if="scope.row.icon.cancelAllocation" type="text" @click="open(scope.row, 'allocation')">取消分配客户</el-button>
+              <!-- <el-button v-if="scope.row.icon.provide" type="text" @click="open(scope.row, 'private')">资产设为私有</el-button> -->
+              <el-button type="text" @click="open(scope.row, 'delete')">删除</el-button>
+            </div>
+            <span v-else>{{ scope.row[item.property] }}</span>
+          </template>
+        </el-table-column>
+      </template>
     </el-table>
     <el-pagination
       class="pagination-container"
@@ -87,10 +98,13 @@ import { FormInfo } from './components'
 export default {
   mixins: [page, resize],
   components: { FormInfo },
+  name: 'Entityviews',
   data () {
     return {
+      isCustomer: this.$store.getters.userInfo.authority === 'CUSTOMER_USER',
       listQuery: {
         type: '',
+        textSearch: '',
         sortOrder: 'DESC'
       },
       entityViewTypes: [],
@@ -99,8 +113,8 @@ export default {
         { property: 'createdTime', label: '创建时间', width: 180, sortable: true },
         { property: 'name', label: '名称', width: 150 },
         { property: 'type', label: '实体视图类型', width: 150 },
-        { property: 'customerTitle', label: '客户', width: 150 },
-        { property: 'customerIsPublic', label: 'Public', width: 150 },
+        { property: 'customerTitle', label: '所属客户', width: 150 },
+        // { property: 'customerIsPublic', label: 'Public', width: 150 },
         { property: 'btn', label: '操作', width: 250 }
       ],
       visible: false,
@@ -114,10 +128,32 @@ export default {
       },
       customerList: [],
       typeList: [],
-      info: null
+      info: null,
+      selection: []
     }
   },
   methods: {
+    handleSelectionChange (val) {
+      this.selection = val
+    },
+    async deleteMore () {
+      this.$confirm('小心，确认后，所有选定的实体视图将被删除，所有相关的数据将变得不可恢复', `确定要删除${this.selection.length}实体视图吗?`, {
+        confirmButtonText: '是',
+        cancelButtonText: '否'
+      }).then(async _ => {
+        try {
+          await Promise.all([
+            ...this.selection.map(item => this.$api.deleteEntityView(item.id.id))
+          ])
+          this.$message.success('操作成功')
+          this.page = 1
+          this.getList()
+          this.$refs.table.clearSelection()
+        } catch (error) {
+          this.$message.error(error.response.data.message)
+        }
+      }).catch(() => {})
+    },
     sortChange ({ order }) {
       const isDesc = order === 'descending'
       this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
@@ -161,6 +197,9 @@ export default {
         }
         const res = await this.$api[apiName](row.id.id)
         if (res.status === 200) {
+          if (type === 'delete') {
+            this.$refs.table.clearSelection()
+          }
           this.$message.success('操作成功')
           this.getList()
         }
@@ -201,14 +240,20 @@ export default {
       })
       this.customerList = res.data.data
     },
-    async getList () {
+    async getEntityViewTypes () {
+      const result = await this.$api.getEntityViewTypes()
+      this.entityViewTypes = result.data
+    },
+    async getList (params) {
       this.loading = true
       try {
-        const res = await this.$api.getEntityViewList(Object.assign({
-          page: this.page - 1,
+        const customerId = this.$store.getters.userInfo.customerId.id
+        const apiName = this.isCustomer ? 'getCustomerEntityView' : 'getEntityViewList'
+        const res = await this.$api[apiName](Object.assign({
+          page: params ? 0 : this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime'
-        }, this.listQuery))
+        }, this.listQuery), this.isCustomer ? customerId : null)
         this.list = res.data.data.map(ele => {
           const { customerIsPublic, customerTitle } = ele
           return {
@@ -224,17 +269,22 @@ export default {
         })
         this.total = res.data.totalElements
       } catch (error) {
-        this.$message.error(error.response.data.message)
+        console.log(error)
+        this.loading = false
       }
       this.loading = false
     },
     init () {
       this.getList()
-      this.getCustomersList()
+      this.getEntityViewTypes()
+      if (!this.isCustomer) {
+        this.getCustomersList()
+      }
     }
   },
-  created () {
+  activated () {
     this.init()
+    this.$refs.table.clearSelection()
   }
 }
 </script>

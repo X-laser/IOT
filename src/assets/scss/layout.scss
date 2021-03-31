@@ -1,16 +1,51 @@
 .app-container {
   background-color: #fff;
-  .filter-container-form {
-    padding: 20px;
-    padding-top: 10px;
-    .el-form-item {
-      margin-top: 10px;
-      margin-bottom: 0;
+  position: relative;
+  min-height: 700px;
+  .icon-container {
+    position: absolute;
+    top: 29px;
+    right: 29px;
+    .wx-button {
+      margin-left: 32px;
+      width: 40px !important;
+      height: 40px !important;
+      &:first-child {
+        margin-left: 0;
+      }
+    }
+  }
+  .filter-container {
+    padding: 29px 29px 0 29px;
+    .filter-container-form {
+      .el-form-item {
+        margin-bottom: 29px;
+        .el-input {
+          .el-input__inner {
+            color: #1C1C1C;
+          }
+          input::-webkit-input-placeholder {
+            line-height: 20px;
+            font-size: 14px;
+            color: #939393;
+          }
+          input::-moz-input-placeholder {
+            line-height: 20px;
+            font-size: 14px;
+            color: #939393;
+          }
+          input::-ms-input-placeholder {
+            line-height: 20px;
+            font-size: 14px;
+            color: #939393;
+          }
+        }
+      }
     }
   }
   > .el-table {
-    margin: 0 20px;
-    width: calc(100% - 40px);
+    margin: 0 29px;
+    width: calc(100% - 58px);
   }
   .el-table {
     border: 1px solid #D5D5D5;
@@ -23,7 +58,19 @@
           background-color: #F5F6FA;
           .cell {
             color: #000;
-            font-size: 16px;
+            font-size: 14px;
+            line-height: 20px;
+            margin-top: 4px;
+          }
+          &.ascending {
+            .ascending {
+              border-bottom-color: #6993FF;
+            }
+          }
+          &.descending {
+            .descending {
+              border-top-color: #6993FF;
+            }
           }
         }
       }
@@ -37,7 +84,14 @@
           height: 58px;
           .cell {
             color: #000;
-            font-size: 16px;
+            font-size: 14px;
+            i {
+              font-size: 20px;
+              cursor: pointer;
+              &.el-icon-delete {
+                color: #f56c6c;
+              }
+            }
           }
         }
       }
@@ -53,9 +107,11 @@
         .el-checkbox__inner {
           height: 26px;
           width: 26px;
+          border-radius: 6px;
+          border-color: #B3B3B3;
           &:after {
             @extend %iconfont;
-            content: '\e606';
+            content: '\e617';
             color: #fff;
             width: 0;
             height: 0;
@@ -83,98 +139,49 @@
             border-color: #6993FF;
           }
         }
+        &.is-disabled {
+          display: none;
+        }
       }
-    }
-  }
-  .title-container {
-    overflow: hidden;
-    margin-left: 30px;
-    .title {
-      height: 40px;
-      line-height: 40px;
-      font-family: PingFangSC-Medium;
-      margin-top: 28px;
-      font-size: 28px;
-    }
-    .details {
-      font-size: 12px;
-      color: #8C8C8C;
-      line-height: 20px;
-      margin-top: 3px;
-      margin-bottom: 22px;
     }
   }
   .el-tabs {
-    margin-left: 28px;
-    float: left;
-    width: calc(100% - 28px - 28px);
-    height: calc(100% - 116px - 27px);
-    .el-tabs__header {
-      background-color: #fff;
-      height: 48px;
-      .el-tabs__nav-wrap {
-        .el-tabs__item {
-          height: 50px;
-          line-height: 48px;
-          font-size: 16px;
-          padding-left: 35px !important;
-          padding-right: 35px !important;
-          color: #5E5E5E;
-          &.is-active {
-            color: #000;
-            position: relative;
-            text-shadow: 1px 0 0 currentColor; // 处理fontWeight防止防抖
-            &:after {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 3px;
-              background-color: #6993FF;
-            }
-          }
-        }
-      }
-    }
     .el-tabs__content {
-      .el-tab-pane {
+      .details-container,
+      .alarm-container,
+      .attribute-container,
+      .event-container,
+      .log-container,
+      .relation-container,
+      .telemetering-container {
+        width: 100%;
         height: 100%;
-        .button-container {
-          .wx-button {
-            margin-right: 24px;
-            margin-bottom: 40px;
-            &:last-of-type {
-              margin-right: 0;
-            }
-          }
-        }
       }
-      padding: 25px 28px 27px 28px;
-      height: calc(100% - 52px);
-      overflow-y: auto;
-      .el-form {
-        // margin-top: 40px;
-        @extend %el-form;
+      .details-container {
+        .el-form {
+          width: 955px;
+          @extend %el-form;
+          margin-bottom: 20px;
+        }
       }
     }
   }
   .pagination-container {
-    padding: 20px 0;
+    padding: 29px 0;
   }
-  &.details-container {
-    position: relative;
-    .btn-container {
-      position: absolute;
-      top: 40px;
-      right: 30px;
-      .wx-button {
-        margin-right: 10px;
-        &:last-child {
-          margin-right: 0;
-        }
+  .btn-container {
+    position: absolute;
+    top: -48px;
+    right: 0;
+    .wx-button {
+      margin-right: 10px;
+      &:last-child {
+        margin-right: 0;
       }
     }
+  }
+  &.details-container {
+    border: none !important;
   }
 }
 

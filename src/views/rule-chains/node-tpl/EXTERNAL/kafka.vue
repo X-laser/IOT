@@ -72,18 +72,15 @@
       </el-select>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'Kafka',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const otherProperties = (rule, value, callback) => {
       const otherProperties = this.form.otherProperties
@@ -126,6 +123,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -198,60 +196,36 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        topicPattern,
-        bootstrapServers,
-        retries,
-        batchSize,
-        linger,
-        bufferMemory,
-        acks,
-        keySerializer,
-        valueSerializer,
-        otherProperties,
-        kafkaHeadersCharset,
-        addMetadataKeyValuesAsKafkaHeaders
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      let otherProp = []
-      if (is) {
-        otherProp = []
-      } else {
-        for (const key in otherProperties) {
-          otherProp.push({
-            source: key,
-            target: otherProperties[key]
-          })
-        }
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const otherProperties = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.otherProperties) {
+        otherProperties.push({
+          source: key,
+          target: forConfiguration.otherProperties[key]
+        })
       }
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        otherProperties: otherProp,
-        topicPattern: is ? 'y-topic' : topicPattern,
-        bootstrapServers: is ? 'localhost:9092' : bootstrapServers,
-        retries: is ? 0 : retries,
-        batchSize: is ? 16384 : batchSize,
-        linger: is ? 0 : linger,
-        bufferMemory: is ? 33554432 : bufferMemory,
-        acks: is ? '-1' : acks,
-        keySerializer: is ? 'org.apache.kafka.common.serialization.StringSerializer' : keySerializer,
-        valueSerializer: is ? 'org.apache.kafka.common.serialization.StringSerializer' : valueSerializer,
-        kafkaHeadersCharset: is ? 'UTF-8' : kafkaHeadersCharset,
-        addMetadataKeyValuesAsKafkaHeaders: !!addMetadataKeyValuesAsKafkaHeaders,
-        description: description || ''
+      forConfiguration.otherProperties = otherProperties
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

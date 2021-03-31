@@ -22,20 +22,18 @@
       <el-input v-model="form.region"></el-input>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'AwsSns',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -70,33 +68,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        topicArnPattern,
-        accessKeyId,
-        secretAccessKey,
-        region
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        topicArnPattern: is ? 'arn:aws:sns:us-east-1:123456789012:MyNewTopic' : topicArnPattern,
-        accessKeyId,
-        secretAccessKey,
-        region: is ? 'us-east-1' : region,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

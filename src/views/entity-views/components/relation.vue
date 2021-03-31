@@ -1,6 +1,6 @@
 <template>
   <div class="relation-container">
-    <el-form :model="listQuery" size="mini" :inline="true">
+    <el-form :model="listQuery" size="medium" :inline="true">
       <el-form-item :label="listQuery.id === 'from' ? '向外的关联' : '向内的关联'">
         <el-select v-model="listQuery.id" @change="getList">
           <el-option label="从" value="from"></el-option>
@@ -9,15 +9,19 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="getList()">查询</el-button>
-        <el-button type="primary" @click="openDialog()">添加</el-button>
+        <el-button v-if="!isCustomer" type="primary" @click="openDialog('add')">添加</el-button>
+      </el-form-item>
+      <el-form-item v-if="selection.length && !isCustomer" class="fr">
+        <wx-button type="primary" icon="icon-remove" circle @click="deleteMore"></wx-button>
       </el-form-item>
     </el-form>
     <el-table
       :data="list"
+      ref="table"
       size="mini"
       height="calc(100% - 126px)"
       :default-sort="{prop: 'type', order: 'descending'}"
-      @sort-change="sortChange">
+      @selection-change="handleSelectionChange">
       <el-table-column
         type="selection"
         width="90">
@@ -30,14 +34,12 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <div v-if="item.property === 'btn'" class="center">
-            <el-button type="primary" size="mini" @click="openDialog(scope.row)">修改</el-button>
-            <el-button type="primary" size="mini" @click="open(scope.row)">删除</el-button>
+          <div v-if="item.property === 'btn'" >
+            <i v-if="!isCustomer" class="el-icon-edit" @click="openDialog('edit', scope.row)"></i>
           </div>
-          <span v-else>{{ scope.row[item.property] }}</span>
+          <span v-else>{{ formatter(item.property, scope.row) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -48,23 +50,24 @@
         <el-form-item label="关联类型" prop="type">
           <el-select
             v-model="form.type"
-            filterable
             allow-create
-            default-first-option
-            :disabled="JSON.stringify(info) !== '{}'">
+            filterable
+            :disabled="type === 'edit'">
             <el-option label="Contains" value="Contains"></el-option>
             <el-option label="Manages" value="Manages"></el-option>
           </el-select>
         </el-form-item>
         <div class="type-container">
           <el-form-item label="类型" prop="entityType">
-            <el-select v-model="form.entityType" @change="change" :disabled="JSON.stringify(info) !== '{}'">
-              <el-option label="设备" value="DEVICE"></el-option>
-              <el-option label="资产" value="ASSET"></el-option>
-              <el-option label="实体视图" value="ENTITY_VIEW"></el-option>
-              <el-option label="租户" value="TENANT"></el-option>
-              <el-option label="客户" value="CUSTOMER"></el-option>
-              <el-option label="仪表板" value="DASHBOARD"></el-option>
+            <el-select
+              v-model="form.entityType"
+              @change="entityTypeChange"
+              :disabled="type === 'edit'">
+              <el-option
+                v-for="item in entityTypeList"
+                :key="item.key"
+                :label="item.label"
+                :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item v-if="form.entityType" label="实体列表" prop="id">
@@ -72,14 +75,16 @@
               v-model="form.id"
               multiple
               filterable
-              allow-create
-              default-first-option
-              :disabled="JSON.stringify(info) !== '{}'">
+              :disabled="type === 'edit'"
+              remote
+              reserve-keyword
+              :remote-method="remoteMethod"
+              @focus="remoteMethod()">
               <el-option v-for="item in types" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
             </el-select>
           </el-form-item>
         </div>
-        <el-form-item label="附加信息" prop="additionalInfo" class="json-container">
+        <el-form-item label="附加信息(JSON)" prop="additionalInfo" class="json-container">
           <Editor language="json"
             :codes="form.additionalInfo"
             @onCodeChange="$value => form.additionalInfo = $value" />
@@ -107,18 +112,19 @@ export default {
       listTitle: {
         from: [
           { property: 'type', label: '类型', width: 180, sortable: true },
-          { property: 'entityType', label: '到实体类型', width: 150 },
+          { property: 'to.entityType', label: '到实体类型', width: 150 },
           { property: 'toName', label: '到实体名称', width: 150 },
           { property: 'btn', label: '详情', width: 100 }
         ],
         to: [
           { property: 'type', label: '类型', width: 180, sortable: true },
-          { property: 'entityType', label: '从实体类型', width: 150 },
+          { property: 'from.entityType', label: '从实体类型', width: 150 },
           { property: 'fromName', label: '从实体名称', width: 150 },
-          { property: 'btn', label: '详情', width: 100 }
+          { property: 'btn', label: '操作', width: 100 }
         ]
       },
       title: '',
+      type: 'add',
       visible: false,
       form: {
         type: '',
@@ -132,203 +138,165 @@ export default {
         id: [{ required: true, message: '实体列表不能为空', trigger: 'change' }]
       },
       types: [],
-      info: {}
+      info: {},
+      entityTypeList: [
+        { label: '设备', value: 'DEVICE' },
+        { label: '资产', value: 'ASSET' },
+        { label: '实体视图', value: 'ENTITY_VIEW' },
+        { label: '客户', value: 'CUSTOMER' }
+      ],
+      selection: [],
+      isCustomer: this.$store.getters.userInfo.authority === 'CUSTOMER_USER'
     }
   },
   methods: {
-    sortChange ({ order }) {},
+    async deleteMore () {
+      this.$confirm('注意,确认后所有选中的关联都会被删除', `确定要删除${this.selection.length}关联吗?`, {
+        confirmButtonText: '是',
+        cancelButtonText: '否'
+      }).then(async _ => {
+        await Promise.all(
+          this.selection.map(ele => this.$api.deleteRelation({
+            fromId: ele.from.id,
+            fromType: ele.from.entityType,
+            relationType: ele.type,
+            toId: ele.to.id,
+            toType: ele.to.entityType
+          }))
+        )
+        this.$message.success('操作成功')
+        this.getList()
+        this.$refs.table.clearSelection()
+      }).catch(() => {})
+    },
+    handleSelectionChange (val) {
+      this.selection = val
+    },
+    formatter (property, row) {
+      const pro = property.split('.')
+      const value = pro.length > 1 ? row[pro[0]][pro[1]] : row[property]
+      return value
+    },
     submit () {
       this.$refs.form.validate(async valid => {
         if (!valid) return false
         const { type, entityType, id, additionalInfo } = this.form
-        const isFrom = this.listQuery.id
-        const params = id.map(ele => {
-          return {
-            ...this.info,
-            type,
-            additionalInfo: JSON.parse(additionalInfo),
-            typeGroup: 'COMMON',
-            from: {
-              entityType: !isFrom ? 'ENTITY_VIEW' : entityType,
-              id: !isFrom ? this.entityId : ele
-            },
-            to: {
-              entityType: isFrom ? 'ENTITY_VIEW' : entityType,
-              id: isFrom ? this.entityId : ele
+        const isTo = this.listQuery.id === 'to'
+        let params = []
+        if (this.type === 'add') {
+          params = id.map(ele => {
+            return {
+              ...this.info,
+              type,
+              additionalInfo: additionalInfo ? JSON.parse(additionalInfo) : '',
+              typeGroup: 'COMMON',
+              from: {
+                entityType: !isTo ? 'ENTITY_VIEW' : entityType,
+                id: !isTo ? this.entityId : ele
+              },
+              to: {
+                entityType: isTo ? 'ENTITY_VIEW' : entityType,
+                id: isTo ? this.entityId : ele
+              }
             }
-          }
-        })
+          })
+        } else {
+          params = [{
+            ...this.info,
+            additionalInfo: additionalInfo ? JSON.parse(additionalInfo) : ''
+          }]
+        }
         await Promise.all([
-          params.map(item => this.$api.postRelation(item))
+          ...params.map(item => this.$api.postRelation(item))
         ])
         this.visible = false
         this.getList()
       })
     },
-    open (row) {
-      const isFrom = this.listQuery.id === 'from'
-      this.$confirm(`确定删除后，当前实体将与实体 '${isFrom ? row.toName : row.fromName}' 取消关联`, `确定要从实体 '${isFrom ? row.toName : row.fromName}' 删除关联吗?`, {
-        confirmButtonText: '是',
-        cancelButtonText: '否'
-      }).then(async _ => {
-        const params = {
-          fromId: row.from.id,
-          fromType: row.from.entityType,
-          relationType: row.type,
-          toId: row.to.id,
-          toType: row.to.entityType
-        }
-        const res = await this.$api.deleteRelation(params)
-        if (res.status === 200) {
-          this.$message.success('删除关联成功')
-          this.getList()
-        }
-      }).catch(() => {})
-    },
-    async openDialog (params = {}) {
+    async openDialog (type, params = {}) {
       this.visible = true
       this.info = params
-      const isParam = Object.is(JSON.stringify(params), '{}')
-      this.title = isParam ? '添加关联' : '修改关联'
+      this.type = type
+      const title = this.listQuery.id === 'from' ? params.toName : params.fromName
+      this.title = type === 'add' ? '添加关联' : `修改关联(${title})`
+      const isNull = typeof params.additionalInfo === 'object'
       const isFrom = this.listQuery.id === 'from'
-      if (!isParam) {
-        const id = isFrom ? params.to.id : params.from.id
-        let apiName = ''
-        let _params = null
-        switch (isFrom ? params.to.entityType : params.from.entityType) {
-          case 'DEVICE':
-            apiName = 'getDevices'
-            _params = { deviceIds: id }
-            break
-          case 'ASSET':
-            apiName = 'getAssets'
-            _params = { assetIds: id }
-            break
-          case 'ENTITY_VIEW':
-            apiName = 'getEntityView'
-            _params = id
-            break
-          case 'TENANT':
-            apiName = 'getTenantInfos'
-            _params = id
-            break
-          case 'CUSTOMER':
-            apiName = 'getCustomersInfo'
-            _params = id
-            break
-          case 'DASHBOARD':
-            apiName = 'getDashboardInfo'
-            _params = id
-            break
-          default:
-            break
+      if (JSON.stringify(params) !== '{}') {
+        this.form = {
+          type: params.type,
+          entityType: isFrom ? params.to.entityType : params.from.entityType,
+          id: [isFrom ? params.toName : params.fromName],
+          additionalInfo: isNull ? JSON.stringify(params.additionalInfo, null, 4) : ''
         }
-        const res = await this.$api[apiName](_params)
-        if (res.status === 200) {
-          const data = Array.isArray(res.data) ? res.data[0] : res.data
-          this.form = {
-            type: params.type,
-            entityType: data.id.entityType,
-            id: [data.id.id],
-            additionalInfo: params.additionalInfo === null ? '' : JSON.stringify(params.additionalInfo, null, 4)
-          }
-          if (this.form.entityType) {
-            this.change(this.form.entityType, 'init')
-          }
+      } else {
+        this.form = {
+          type: '',
+          entityType: '',
+          id: [],
+          additionalInfo: ''
         }
       }
     },
-    async change (value, init) {
-      if (init !== 'init') {
-        this.types = []
-        this.form.id = []
-      }
-      let apiName = ''
-      let params = {
-        pageSize: 50,
+    entityTypeChange () {
+      this.form.id = []
+    },
+    async remoteMethod (query) {
+      const params = {
         page: 0,
-        sortProperty: 'name',
-        sortOrder: 'ASC'
+        pageSize: 50,
+        sortOrder: 'ASC',
+        textSearch: query
       }
-      switch (value) {
+      let result = null
+      switch (this.form.entityType) {
         case 'DEVICE':
-          apiName = 'getDeviceInfo'
+          result = await this.$api.getDeviceInfo(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ASSET':
-          apiName = 'getAssetInfos'
+          result = await this.$api.getAssetInfos(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ENTITY_VIEW':
-          apiName = 'getEntityViewList'
+          result = await this.$api.getEntityViewList(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'TENANT':
-          apiName = 'getTenantInfos'
-          params = 'e65c8de0-aa12-11ea-80f5-9b5ada2d0814'
+          result = await this.$api.getTenantInfos(this.$store.getters.userInfo.tenantId.id)
           break
         case 'CUSTOMER':
-          apiName = 'getCustomersList'
-          params = {
-            ...params,
+          result = await this.$api.getCustomersList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         case 'DASHBOARD':
-          apiName = 'getDashboardsList'
-          params = {
-            ...params,
+          result = await this.$api.getDashboardsList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         default:
           break
       }
-      const res = await this.$api[apiName](params)
-      if (value === 'TENANT') {
-        this.types = [res.data]
-      } else {
-        this.types = res.data.data
-      }
+      this.types = result.data.data || [result.data]
     },
     async getList () {
-      const params = {
-        toId: this.entityId,
-        toType: 'ENTITY_VIEW',
-        fromId: this.entityId,
-        fromType: 'ENTITY_VIEW'
-      }
-      const isFrom = this.listQuery.id === 'from'
-      if (isFrom) {
-        delete params.toId
-        delete params.toType
-      } else {
-        delete params.fromId
-        delete params.fromType
-      }
-      const res = await this.$api.getRelationsInfo(params)
-      this.list = (res.data && res.data.map(ele => Object.assign(ele, {
-        entityType: isFrom ? ele.to.entityType : ele.from.entityType
-      }))) || []
+      const result = await this.$api.getRelationsInfo({
+        [`${this.listQuery.id}Id`]: this.entityId,
+        [`${this.listQuery.id}Type`]: 'ENTITY_VIEW'
+      })
+      this.list = result.data
     }
   },
   created () {
     this.getList()
-  },
-  watch: {
-    visible (n) {
-      if (!n) {
-        this.$refs.form.resetFields()
-      }
-    }
   }
 }
 </script>
 
-<style lang="scss" scope>
-  .relation-container {
-    height: 100%;
-    .el-form {
-      margin-bottom: 20px;
-    }
-  }
+<style lang="scss" scoped>
   .type-container {
     @include clearfix();
     .el-form-item {

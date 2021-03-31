@@ -1,6 +1,6 @@
 <template>
   <div class="log-container">
-    <el-form :model="listQuery" size="mini" :inline="true">
+    <el-form :model="listQuery" size="medium" :inline="true">
       <el-form-item label="时间">
         <el-date-picker
           v-model="listQuery.time"
@@ -13,7 +13,7 @@
         </el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="getList()">查询</el-button>
+        <el-button type="primary" @click="getList(listQuery)">查询</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -22,6 +22,7 @@
       @sort-change="sortChange"
       size="mini"
       height="calc(100% - 126px)">
+      <el-table-column width="30px"></el-table-column>
       <el-table-column
         v-for="(item, index) in listTitle"
         :key="index"
@@ -30,10 +31,9 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <div v-if="item.property === 'btn'" class="center">
+          <div v-if="item.property === 'btn'" >
             <i class="el-icon-more" @click="openDialog(scope.row)"></i>
           </div>
           <span v-else>{{ scope.row[item.property] }}</span>
@@ -111,10 +111,10 @@ export default {
         actionFailureDetails: row.actionFailureDetails
       }
     },
-    async getList () {
+    async getList (params) {
       const time = this.listQuery.time || ['', '']
       const res = await this.$api.getEntityViewLogs({
-        page: this.page - 1,
+        page: params ? 0 : this.page - 1,
         pageSize: this.limit,
         sortProperty: 'createdTime',
         sortOrder: this.listQuery.sortOrder,
@@ -132,12 +132,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scope>
-  .log-container {
-    height: 100%;
-    .el-form {
-      margin-bottom: 20px;
-    }
-  }
-</style>

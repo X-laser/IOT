@@ -1,11 +1,16 @@
 <template>
   <button type="button"
+    :disabled="buttonDisabled"
     :class="[
       'wx-button',
       `wx-button-${type}`,
       icon ? 'wx-button-icon' : '',
-      circle ? 'wx-button-circle' : ''
+      circle ? 'wx-button-circle' : '',
+      {
+        'is-disabled': buttonDisabled
+      }
     ]"
+    :title="title"
     @click="$event => $emit('click', $event)">
     <i v-if="icon" class="iconfont" :class="icon"></i>
     <span v-if="$slots.default">
@@ -27,6 +32,15 @@ export default {
     },
     circle: {
       type: Boolean
+    },
+    title: {
+      type: String
+    },
+    disabled: Boolean
+  },
+  computed: {
+    buttonDisabled () {
+      return this.disabled
     }
   }
 }
@@ -45,13 +59,14 @@ export default {
       border-color: transparent;
     }
     &.wx-button-default {
+      border-color:#E6E6E6;
       background-color: #E6E6E6;
       span {
         color: #000;
       }
     }
     &.wx-button-primary {
-      background-color: #4880FF;
+      background-color: #6993FF;
       span {
         color: #fff;
       }
@@ -61,7 +76,6 @@ export default {
       background-color: #FFCC4F;
       span {
         color: #000;
-        font-weight: bolder;
         padding: 6px 31px 5px 32px;
       }
     }
@@ -81,6 +95,10 @@ export default {
         color: #fff;
         font-size: 18px;
       }
+    }
+    &.is-disabled,&.is-disabled:focus,&.is-disabled:hover {
+      cursor: not-allowed;
+      background-color: rgba(105, 147, 255, 0.52);
     }
   }
 </style>

@@ -4,18 +4,31 @@
       <el-input placeholder="搜索节点" v-model="searchNode"></el-input>
     </div>
     <el-collapse v-model="activeName">
-      <el-collapse-item v-for="(item, key) in ruleChainsTypes" :class="key.toLowerCase()" :key="key" :title="item.title" :name="key">
-        <div v-for="i in item.list"
-          draggable="true"
-          :key="i.id.id"
-          class="getItem"
-          @dragstart="dragstart"
-          :style="{ backgroundColor: ruleChainsTypes[key].color }"
-          :data-id="i.id.id"
-          :data-label="i.name"
-          :data-fill="ruleChainsTypes[key].color"
-          :data-type="i.clazz ? i.clazz : i.type"
-          >{{ i.name }}</div>
+      <el-collapse-item v-for="(item, key) in searchList" :class="key.toLowerCase()" :key="key" :title="item.title" :name="key">
+        <el-popover width="400" trigger="hover" :open-delay="300" placement="right" v-for="i in item.list" v-show="i.name.indexOf(searchNode) > -1" :key="i.id.id">
+          <p style="font-weight: bolder;">{{ i.name }}</p>
+          <template v-if="i.name !== 'rule chain'">
+            <p style="font-style: italic;" v-html="i.configurationDescriptor.nodeDefinition.description"></p>
+            <br>
+            <p v-html="i.configurationDescriptor.nodeDefinition.details"></p>
+          </template>
+          <p v-else>将传递的消息投递到指定规则引擎</p>
+          <div
+            slot="reference"
+            draggable="true"
+            class="getItem"
+            @dragstart="dragstart"
+            :style="{
+              backgroundColor: ruleChainsTypes[key].color,
+              color: ruleChainsTypes[key].labelColor
+            }"
+            :data-id="i.id.id"
+            :data-label="i.name"
+            :data-fill="ruleChainsTypes[key].color"
+            :data-type="i.clazz ? i.clazz : i.type"
+            :data-color="ruleChainsTypes[key].labelColor"
+            >{{ i.name }}</div>
+        </el-popover>
       </el-collapse-item>
     </el-collapse>
   </div>
@@ -32,6 +45,7 @@ export default {
   data () {
     return {
       searchNode: '',
+      searchList: Object.assign({}, this.ruleChainsTypes),
       activeName: ['FILTER', 'ACTION', 'ENRICHMENT', 'TRANSFORMATION', 'EXTERNAL', 'RULECHAIN']
     }
   },
@@ -161,13 +175,8 @@ export default {
               border-radius: 4px;
               line-height: 44px;
               text-align: center;
-              margin-bottom: 10px;
-              &:first-child {
-                margin-top: 10px;
-              }
-              &:last-child {
-                margin-bottom: 0;
-              }
+              margin-top: 10px;
+              border: 1px solid #CED4D9;
             }
           }
         }

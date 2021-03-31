@@ -1,9 +1,9 @@
-import Cookies from 'js-cookie'
-
-// 过期时间8小时
-const timer = 1 / 24 * 8
-
-export const tokenKey = 'X-Authorization'
-export const getToken = () => Cookies.get(tokenKey)
-export const setToken = token => Cookies.set(tokenKey, token, { expires: timer })
-export const removeToken = () => Cookies.remove(tokenKey)
+export const getToken = tokenKey => window.sessionStorage.getItem(tokenKey)
+export const setToken = (token, refreshToken) => {
+  window.sessionStorage.setItem('token', token)
+  window.sessionStorage.setItem('refreshToken', refreshToken)
+}
+export const removeToken = () => {
+  window.sessionStorage.removeItem('token')
+  window.sessionStorage.removeItem('refreshToken')
+}

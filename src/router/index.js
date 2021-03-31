@@ -23,8 +23,28 @@ const createRouter = () => new VueRouter({
       component: () => import('@/views/login')
     },
     {
+      path: '/login/createPassword',
+      component: () => import('@/views/login/create-password')
+    },
+    {
+      path: '/api/noauth/activate',
+      redirect: '/login/createPassword'
+    },
+    {
+      path: '/login/resetExpiredPassword',
+      component: () => import('@/views/login/reset-expired-password')
+    },
+    {
+      path: '/login/resetPasswordRequest',
+      component: () => import('@/views/login/reset-password-request')
+    },
+    {
+      path: '/login/resetCertKey',
+      component: () => import('@/views/login/reset-cert-key')
+    },
+    {
       path: '*',
-      component: () => import('@/views/login')
+      redirect: '/login'
     }
   ]
 })
@@ -50,6 +70,9 @@ NProgress.configure({
 router.beforeEach((to, from, next) => {
   // 每次切换页面时，调用进度条
   NProgress.start()
+  if (to.meta.cashComponentName) {
+    store.commit('SET_CASH_VIEW', to.meta.cashComponentName)
+  }
   next()
 })
 // 当路由进入后：关闭进度条

@@ -18,7 +18,7 @@
         <el-option label="到" value="TO"></el-option>
       </el-select>
     </el-form-item>
-    <div class="type-container" v-if="form.deleteForSingleEntity">
+    <template v-if="form.deleteForSingleEntity">
       <el-form-item label="类型" prop="entityType">
         <el-select v-model="form.entityType">
           <el-option label="设备" value="DEVICE"></el-option>
@@ -33,7 +33,7 @@
         <el-input v-model="form.entityNamePattern"></el-input>
         <span class="desc">名称模式,使用 ${metaKeyName} 替换元数据中的变量</span>
       </el-form-item>
-    </div>
+    </template>
     <el-form-item label="关系类型模式" prop="relationType">
       <el-input v-model="form.relationType"></el-input>
       <span class="desc">关系类型模式,使用 ${metaKeyName} 替换元数据中的变量</span>
@@ -43,18 +43,15 @@
       <span class="desc">指定允许存储找到的实体记录的最大时间间隔0值表示记录永不过期</span>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'DeleteRelation',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const entityCacheExpiration = (rule, value, callback) => {
       if (Number(value) < 0) {
@@ -66,6 +63,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -105,36 +103,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        deleteForSingleEntity,
-        direction,
-        entityType,
-        entityNamePattern,
-        relationType,
-        entityCacheExpiration
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        description: description || '',
-        deleteForSingleEntity: deleteForSingleEntity || false,
-        direction: JSON.stringify(this.nodeInfo) === '{}' ? 'FROM' : direction,
-        entityType,
-        entityNamePattern,
-        relationType: JSON.stringify(this.nodeInfo) === '{}' ? 'Contains' : relationType,
-        entityCacheExpiration: JSON.stringify(this.nodeInfo) === '{}' ? '300' : entityCacheExpiration
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

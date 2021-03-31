@@ -8,28 +8,26 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="请求ID元数据属性名称" prop="scope">
-      <el-input v-model="form.scope"></el-input>
+    <el-form-item label="请求ID元数据属性名称" prop="requestIdMetaDataAttribute">
+      <el-input v-model="form.requestIdMetaDataAttribute"></el-input>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'RpcCallReply',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
-        scope: '',
+        requestIdMetaDataAttribute: '',
         description: ''
       },
       rules: {
@@ -45,30 +43,32 @@ export default {
           debugMode: this.form.debugMode || false,
           name: this.form.name,
           configuration: {
-            scope: this.form.scope
+            requestIdMetaDataAttribute: this.form.requestIdMetaDataAttribute
           },
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { scope } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        scope: is ? 'requestId' : scope,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

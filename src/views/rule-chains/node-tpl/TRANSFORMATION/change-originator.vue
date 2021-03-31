@@ -11,22 +11,22 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="Originator源" prop="originatorSource">
+    <el-form-item label="消息源" prop="originatorSource">
       <el-select v-model="form.originatorSource">
-        <el-option label="客户" value="CUSTOMER"></el-option>
-        <el-option label="租户" value="TENANT"></el-option>
+        <el-option label="用户" value="CUSTOMER"></el-option>
+        <el-option label="设备管理员" value="TENANT"></el-option>
         <el-option label="关联" value="RELATED"></el-option>
         <el-option label="告警源" value="ALARM_ORIGINATOR"></el-option>
       </el-select>
     </el-form-item>
     <template v-if="form.originatorSource === 'RELATED'">
       <el-form-item label="关系查询"></el-form-item>
-      <el-checkbox v-model="form.fetchLastLevelOnly">relation.last-level-relation</el-checkbox>
+      <el-checkbox v-model="form.fetchLastLevelOnly">只匹配最后一层关联</el-checkbox>
       <div class="relation-container">
         <el-form-item label="方向" prop="direction" class="direction">
           <el-select v-model="form.direction">
-            <el-option label="从" value="FORM"></el-option>
-            <el-option label="去" value="TO"></el-option>
+            <el-option label="从" value="FROM"></el-option>
+            <el-option label="到" value="TO"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="最大关联级别" prop="maxLevel">
@@ -61,18 +61,15 @@
       </el-form-item>
     </template>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'ChangeOriginator',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const filters = (rule, value, callback) => {
       const filters = this.form.filters
@@ -95,6 +92,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -102,7 +100,8 @@ export default {
         direction: '',
         maxLevel: '',
         filters: [],
-        description: ''
+        description: '',
+        originatorSource: ''
       },
       rules: {
         name: [{ required: true, message: '名称不能为空', trigger: 'change' }],
@@ -116,7 +115,7 @@ export default {
         { label: '资产', value: 'ASSET' },
         { label: '实体视图', value: 'ENTITY_VIEW' },
         { label: '设备管理员', value: 'TENANT' },
-        { label: '用户', value: 'CUSTOMER' },
+        { label: '客户', value: 'CUSTOMER' },
         { label: '应用', value: 'DASHBOARD' }
       ]
     }
@@ -152,37 +151,31 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { originatorSource } = this.nodeInfo.configuration || {}
-      const { direction, maxLevel, filters, fetchLastLevelOnly } = (this.nodeInfo.configuration && this.nodeInfo.configuration.relationsQuery) || {}
-      let defaultFilters = []
-      if (JSON.stringify(this.nodeInfo) === '{}') {
-        defaultFilters = [
-          { relationType: 'Contains', entityTypes: [] }
-        ]
-      } else {
-        defaultFilters = filters
-      }
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        fetchLastLevelOnly: fetchLastLevelOnly || false,
-        direction: direction || 'FORM',
-        maxLevel,
-        filters: defaultFilters,
-        description: description || '',
-        originatorSource: originatorSource || 'CUSTOMER'
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description,
+        ...configuration.relationsQuery
+      })
+      Object.assign(defaultConfiguration, {
+        ...defaultConfiguration.relationsQuery
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -12,11 +12,29 @@
     "trigger": "axis",
     "axisPointer": {
       "type": "shadow"
+    },
+    "transitionDuration": 0
+  },
+  "dataZoom": [
+    {
+      "show": true,
+      "realtime": true,
+      "start": 0,
+      "end": 70
+    },
+    {
+      "type": "inside",
+      "realtime": true,
+      "start": 0,
+      "end": 70,
+      "zoomOnMouseWheel": false
     }
+  ],
+  "grid": {
+    "bottom": 80
   },
   "xAxis": {
     "type": "category",
-    "data": ["T1消防远程监控", "无动力设备管理", "充电桩状态监测", "高杆灯远程控制", "智能防讯系统", "T3屋面大风预警", "智能资产管理"],
     "axisTick": {
       "alignWithLabel": true,
       "show": false
@@ -57,7 +75,6 @@
   },
   "series": [
     {
-      "data": [96, 70, 48, 58, 45, 73, 35],
       "type": "bar",
       "barWidth": 15,
       "itemStyle": {

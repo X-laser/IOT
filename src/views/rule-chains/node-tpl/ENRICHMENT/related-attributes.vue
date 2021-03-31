@@ -12,17 +12,17 @@
       </el-form-item>
     </div>
     <el-form-item label="关系查询"></el-form-item>
-    <el-checkbox v-model="form.fetchLastLevelOnly">relation.last-level-relation</el-checkbox>
+    <el-checkbox v-model="form.fetchLastLevelOnly">只匹配最后一层关联</el-checkbox>
     <el-form-item label="方向" prop="direction" class="direction">
       <el-select v-model="form.direction">
-        <el-option label="从" value="FORM"></el-option>
-        <el-option label="去" value="TO"></el-option>
+        <el-option label="从" value="FROM"></el-option>
+        <el-option label="到" value="TO"></el-option>
       </el-select>
     </el-form-item>
     <el-form-item label="最大关联级别" prop="maxLevel">
       <el-input type="number" v-model="form.maxLevel" :min="1"></el-input>
     </el-form-item>
-    <el-form-item label="属性映射" prop="filters" class="attrMapping-container">
+    <el-form-item label="关联过滤器" prop="filters" class="attrMapping-container">
       <ul class="attrMapping">
         <li>
           <span>类型</span>
@@ -52,7 +52,7 @@
       <el-checkbox v-model="form.telemetry">最新遥测</el-checkbox>
       <ul class="attrMapping">
         <li>
-          <span>{{ form.telemetry ? '原遥测' :  '原属性'}}</span>
+          <span>{{ form.telemetry ? '源遥测' :  '源属性'}}</span>
           <span>目标属性</span>
           <i class="el-icon-circle-plus-outline" @click="add('attrMapping')"></i>
         </li>
@@ -64,18 +64,15 @@
       </ul>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'RelatedAttributes',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const filters = (rule, value, callback) => {
       const filters = this.form.filters
@@ -96,7 +93,7 @@ export default {
       if (attrMapping.length) {
         attrMapping.forEach(item => {
           if (item.source === '') {
-            callback(new Error(`${isTelemetry ? '原遥测' : '原属性'}不能为空`))
+            callback(new Error(`${isTelemetry ? '源遥测' : '源属性'}不能为空`))
           }
           if (item.target === '') {
             callback(new Error('目标属性不能为空'))
@@ -115,6 +112,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -138,7 +136,7 @@ export default {
         { label: '资产', value: 'ASSET' },
         { label: '实体视图', value: 'ENTITY_VIEW' },
         { label: '设备管理员', value: 'TENANT' },
-        { label: '用户', value: 'CUSTOMER' },
+        { label: '客户', value: 'CUSTOMER' },
         { label: '应用', value: 'DASHBOARD' }
       ]
     }
@@ -186,51 +184,40 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        telemetry,
-        attrMapping
-      } = this.nodeInfo.configuration || {}
-      const { direction, maxLevel, filters, fetchLastLevelOnly } = (this.nodeInfo.configuration && this.nodeInfo.configuration.relationsQuery) || {}
-      let attrMap = []
-      let defaultFilters = []
-      if (JSON.stringify(this.nodeInfo) === '{}') {
-        attrMap = [
-          { source: 'temperature', target: 'tempo' }
-        ]
-        defaultFilters = [
-          { relationType: 'Contains', entityTypes: [] }
-        ]
-      } else {
-        for (const key in attrMapping) {
-          attrMap.push({
-            source: key,
-            target: attrMapping[key]
-          })
-        }
-        defaultFilters = filters
-      }
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        fetchLastLevelOnly: fetchLastLevelOnly || false,
-        direction: direction || 'FORM',
-        maxLevel,
-        telemetry: telemetry || false,
-        attrMapping: attrMap,
-        filters: defaultFilters,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description,
+        ...configuration.relationsQuery
+      })
+      Object.assign(defaultConfiguration, {
+        ...defaultConfiguration.relationsQuery
+      })
+      const attrMapping = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.attrMapping) {
+        attrMapping.push({
+          source: key,
+          target: forConfiguration.attrMapping[key]
+        })
       }
-      console.log(this.form)
+      forConfiguration.attrMapping = attrMapping
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

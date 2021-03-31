@@ -8,7 +8,7 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="最长时间序列" prop="latestTsKeyNames">
+    <el-form-item label="最新时间序列" prop="latestTsKeyNames">
       <el-select
         v-model="form.latestTsKeyNames"
         multiple
@@ -25,17 +25,17 @@
     </el-form-item>
     <el-form-item label="读取模式" prop="fetchMode">
       <el-select v-model="form.fetchMode">
-        <el-option label="FIRST" value="FIRST"></el-option>
-        <el-option label="LAST" value="LAST"></el-option>
-        <el-option label="ALL" value="ALL"></el-option>
+        <el-option label="起始" value="FIRST"></el-option>
+        <el-option label="最后" value="LAST"></el-option>
+        <el-option label="全部" value="ALL"></el-option>
       </el-select>
       <span class="desc">如果提取模式选择了'ALL'，则可以选择遥测采样顺序</span>
     </el-form-item>
     <template v-if="form.fetchMode === 'ALL'">
       <el-form-item label="排序" prop="orderBy">
         <el-select v-model="form.orderBy">
-          <el-option label="ASC" value="ASC"></el-option>
-          <el-option label="DESC" value="DESC"></el-option>
+          <el-option label="升序" value="ASC"></el-option>
+          <el-option label="降序" value="DESC"></el-option>
         </el-select>
         <span class="desc">选择以选择遥测采样顺序</span>
       </el-form-item>
@@ -48,7 +48,7 @@
       <el-checkbox v-model="form.useMetadataIntervalPatterns">使用元数据中的分隔格式</el-checkbox>
       <div class="desc">如果选中,规则节点将使用消息元数据中的开始和结束分隔格式（假设间隔以毫秒为单位）</div>
     </el-form-item>
-    <template v-if="form.useMetadataIntervalPatterns">
+    <template v-if="!form.useMetadataIntervalPatterns">
       <el-form-item label="开始间隔" prop="startInterval">
         <el-input type="number" v-model="form.startInterval"></el-input>
       </el-form-item>
@@ -85,18 +85,15 @@
       </el-form-item>
     </template>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'OriginatorTelemetry',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const limit = (rule, value, callback) => {
       if (value === undefined || value === '') {
@@ -161,46 +158,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        latestTsKeyNames,
-        fetchMode,
-        startIntervalPattern,
-        endIntervalPattern,
-        orderBy,
-        limit,
-        startInterval,
-        startIntervalTimeUnit,
-        endInterval,
-        endIntervalTimeUnit,
-        useMetadataIntervalPatterns
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        latestTsKeyNames: latestTsKeyNames || [],
-        fetchMode: fetchMode || 'FIRST',
-        startIntervalPattern,
-        endIntervalPattern,
-        description,
-        orderBy: orderBy || 'ASC',
-        limit,
-        startInterval,
-        startIntervalTimeUnit: startIntervalTimeUnit || 'MINUTES',
-        endInterval,
-        endIntervalTimeUnit: endIntervalTimeUnit || 'MINUTES',
-        useMetadataIntervalPatterns: useMetadataIntervalPatterns || false
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -10,37 +10,35 @@
     </div>
     <el-form-item label="方向" prop="direction">
       <el-select v-model="form.direction">
-        <el-option label="从" value="FORM"></el-option>
+        <el-option label="从" value="FROM"></el-option>
         <el-option label="到" value="TO"></el-option>
       </el-select>
     </el-form-item>
-    <div class="type-container">
-      <el-form-item label="类型" prop="entityType">
-        <el-select v-model="form.entityType">
-          <el-option label="设备" value="DEVICE"></el-option>
-          <el-option label="资产" value="ASSET"></el-option>
-          <el-option label="实体视图" value="ENTITY_VIEW"></el-option>
-          <el-option label="设备管理员" value="TENANT"></el-option>
-          <el-option label="用户" value="CUSTOMER"></el-option>
-          <el-option label="应用" value="DASHBOARD"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="名称模式" prop="entityNamePattern" v-if="form.entityType">
-        <el-input v-model="form.entityNamePattern"></el-input>
-        <span class="desc">名称模式,使用 ${metaKeyName} 替换元数据中的变量</span>
-      </el-form-item>
-      <el-form-item label="类型模式" prop="entityTypePattern" v-if="form.entityType === 'DEVICE' || form.entityType === 'ASSET'">
-        <el-input v-model="form.entityTypePattern"></el-input>
-        <span class="desc">类型模式,使用 ${metaKeyName} 替换元数据中的变量</span>
-      </el-form-item>
-    </div>
+    <el-form-item label="类型" prop="entityType">
+      <el-select v-model="form.entityType">
+        <el-option label="设备" value="DEVICE"></el-option>
+        <el-option label="资产" value="ASSET"></el-option>
+        <el-option label="实体视图" value="ENTITY_VIEW"></el-option>
+        <el-option label="设备管理员" value="TENANT"></el-option>
+        <el-option label="用户" value="CUSTOMER"></el-option>
+        <el-option label="应用" value="DASHBOARD"></el-option>
+      </el-select>
+    </el-form-item>
+    <el-form-item label="名称模式" prop="entityNamePattern" v-if="form.entityType">
+      <el-input v-model="form.entityNamePattern"></el-input>
+      <span class="desc">名称模式,使用 ${metaKeyName} 替换元数据中的变量</span>
+    </el-form-item>
     <el-form-item label="关系类型模式" prop="relationType">
       <el-input v-model="form.relationType"></el-input>
       <span class="desc">关系类型模式,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
     <el-form-item prop="createEntityIfNotExists">
       <el-checkbox v-model="form.createEntityIfNotExists">如果不存在则创建新实体</el-checkbox>
-      <div class="desc">如果不存在,请在上面创建一个新实体集</div>
+      <div class="desc">如果不存在,将在上面创建一个新实体集</div>
+    </el-form-item>
+    <el-form-item label="类型模式" prop="entityTypePattern" v-if="(form.entityType === 'DEVICE' || form.entityType === 'ASSET') && form.createEntityIfNotExists">
+      <el-input v-model="form.entityTypePattern"></el-input>
+      <span class="desc">类型模式,使用 ${metaKeyName} 替换元数据中的变量</span>
     </el-form-item>
     <el-form-item prop="removeCurrentRelations">
       <el-checkbox v-model="form.removeCurrentRelations">删除当前关系</el-checkbox>
@@ -55,18 +53,15 @@
       <span class="desc">指定允许存储找到的实体记录的最大时间间隔0值表示记录永不过期</span>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'CreateRelation',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const entityCacheExpiration = (rule, value, callback) => {
       if (Number(value) < 0) {
@@ -78,6 +73,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -124,64 +120,31 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        direction,
-        entityType,
-        entityNamePattern,
-        entityTypePattern,
-        relationType,
-        createEntityIfNotExists,
-        removeCurrentRelations,
-        changeOriginatorToRelatedEntity,
-        entityCacheExpiration
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        direction: JSON.stringify(this.nodeInfo) === '{}' ? 'FORM' : direction,
-        entityType,
-        entityNamePattern,
-        entityTypePattern,
-        relationType: JSON.stringify(this.nodeInfo) === '{}' ? 'Contains' : relationType,
-        createEntityIfNotExists,
-        removeCurrentRelations,
-        changeOriginatorToRelatedEntity,
-        entityCacheExpiration,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }
 </script>
 
 <style lang="scss" scoped>
-  .type-container {
-    @include clearfix();
-    margin-bottom: 18px;
-    .el-form-item {
-      float: left;
-      margin-right: 10px;
-      &:last-of-type {
-        margin-right: 0;
-      }
-      &:nth-of-type(1) {
-        width: 120px;
-      }
-      &:nth-of-type(2), &:nth-of-type(3) {
-        width: 200px;
-        width: calc((100% - 140px) / 2);
-      }
-    }
-  }
 </style>

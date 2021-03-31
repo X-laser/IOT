@@ -1,33 +1,34 @@
 <template>
   <div class="details-container">
     <div class="button-container">
-      <!-- <wx-button v-if="icon.public" type="warning" @click="open('public')">资产设为公开</wx-button> -->
-      <wx-button type="warning">打开</wx-button>
-      <wx-button type="warning" @click="exportDashboard">导出</wx-button>
-      <wx-button v-if="!icon.private" type="warning" @click="publicLink">设为公开</wx-button>
-      <wx-button v-if="icon.private" type="warning" @click="open('private')">设为私有</wx-button>
-      <wx-button type="warning" @click="openDialog">管理已分配的用户</wx-button>
-      <wx-button type="warning" @click="open('remove')">删除</wx-button>
+      <wx-button type="warning" @click="openDetails">打开</wx-button>
+      <template v-if="!isCustomer">
+        <wx-button type="warning" @click="exportDashboard">导出</wx-button>
+        <!-- <wx-button v-if="!form.link" type="warning" @click="publicLink">设为公开</wx-button>
+        <wx-button v-if="form.link" type="warning" @click="open('private')">设为私有</wx-button> -->
+        <wx-button type="warning" @click="openDialog">管理已分配的客户</wx-button>
+        <wx-button type="warning" @click="open('remove')">删除</wx-button>
+      </template>
     </div>
-    <el-form ref="form" :model="form" :rules="rules" style="max-width: 955px;">
+    <el-form ref="form" :model="form" :rules="rules" :disabled="isCustomer">
       <el-form-item label="标题" prop="title">
-        <el-input v-model="form.title"></el-input>
+        <el-input v-model="form.title" placeholder="请输入标题"></el-input>
       </el-form-item>
       <el-form-item label="分配客户" prop="customer">
-        <el-input disabled v-model="form.customer"></el-input>
+        <el-input readonly v-model="form.customer"></el-input>
       </el-form-item>
-      <el-form-item label="公共链接" prop="link">
-        <el-input disabled v-model="form.link"></el-input>
-      </el-form-item>
+      <!-- <el-form-item v-if="form.link" label="公共链接" prop="link">
+        <el-input readonly v-model="form.link"></el-input>
+      </el-form-item> -->
       <el-form-item label="描述" prop="description">
-        <el-input type="textarea" v-model="form.description"></el-input>
+        <el-input type="textarea" autosize v-model="form.description" placeholder="请输入描述"></el-input>
       </el-form-item>
-      <el-form-item>
+      <el-form-item v-if="!isCustomer">
         <wx-button type="primary" @click="submit('edit')">修改</wx-button>
       </el-form-item>
     </el-form>
     <icloud-dialog
-      title="将资产分配给客户"
+      title="将应用库分配给客户"
       :visible.sync="visible">
       <el-form ref="form" :model="form" :rules="rules">
         <el-form-item label="已分配的客户" prop="id">
@@ -45,9 +46,9 @@
         <wx-button @click="visible = false">取消</wx-button>
       </div>
     </icloud-dialog>
-    <icloud-dialog title="仪表板现已公布" width="800px" :visible.sync="publicVisble">
+    <icloud-dialog title="应用库现已公布" width="800px" :visible.sync="publicVisble">
       <div class="link">
-        <span>仪表板现已公布你的仪表板'{{publicInfo.name}}'已被公开，可通过如下<el-button
+        <span>应用库现已公布你的应用库'{{publicInfo.name}}'已被公开，可通过如下<el-button
           type="text"
           class="active"
           @click="openLink">链接</el-button>访问:</span>
@@ -65,6 +66,8 @@ export default {
   props: ['id'],
   data () {
     return {
+      info: {},
+      isCustomer: this.$store.getters.userInfo.authority === 'CUSTOMER_USER',
       icon: {},
       visible: false,
       form: {
@@ -75,8 +78,7 @@ export default {
         link: ''
       },
       rules: {
-        title: [{ required: true, message: '标题不能为空', trigger: 'change' }],
-        id: [{ required: true, message: '已分配的客户不能为空', trigger: 'change' }]
+        title: [{ required: true, message: '标题不能为空', trigger: 'change' }]
       },
       customerList: [],
       publicVisble: false,
@@ -92,12 +94,14 @@ export default {
         if (!valid) return false
         try {
           const isTpl = type === 'edit'
+          const configuration = {
+            ...this.info.configuration,
+            description: this.form.description
+          }
           const params = isTpl ? {
             ...this.info,
             title: this.form.title,
-            configuration: {
-              description: this.form.description
-            }
+            configuration
           } : this.form.id
           const apiName = isTpl ? 'postDashboard' : 'postDashboardCustomers'
           await this.$api[apiName](
@@ -105,14 +109,18 @@ export default {
           )
           this.$message.success('操作成功')
           if (isTpl) {
-            this.$router.push({ path: `/dashboards/${this.id}`, query: { title: this.form.title } })
+            this.$router.push({ path: `/dashboards/${this.id}/details`, query: { title: this.form.title } })
           } else {
+            this.init()
             this.visible = false
           }
         } catch (error) {
           this.$message.error(error.response.data.message)
         }
       })
+    },
+    openDetails () {
+      this.$router.push({ path: `/dashboards/${this.id}`, query: { title: this.form.title } })
     },
     async exportDashboard () {
       try {
@@ -131,10 +139,11 @@ export default {
     async publicLink () {
       try {
         const res = await this.$api.postPublicDashboard(this.info.id.id)
-        const publicId = res.data.assignedCustomers.filter(item => item.public)[0].customerId.id
+        const publicInfo = res.data.assignedCustomers.find(item => item.public)
+        const publicId = publicInfo.customerId.id
         this.publicInfo = {
           name: this.info.title,
-          link: `${window.IP_CONFIG.BASE_URL}/dashboard/${this.info.id.id}?publicId=${publicId}`
+          link: `${this.$ip('BASE_URL')}/#/dashboard/${this.info.id.id}?publicId=${publicId}`
         }
         this.publicVisble = true
       } catch (error) {
@@ -144,13 +153,13 @@ export default {
     open (type) {
       const info = {
         private: {
-          tipMsg: `您确定要将仪表板'${this.info.name}'设为私有吗？`,
-          msg: '确认后，仪表板将被设为私有，不能被其他人访问。',
+          tipMsg: `您确定要将应用库'${this.info.name}'设为私有吗？`,
+          msg: '确认后，应用库将被设为私有，不能被其他人访问。',
           apiName: 'deletePublicDashboard'
         },
         remove: {
-          tipMsg: `您确定要删除仪表板'${this.info.name}'吗？`,
-          msg: '小心！确认后仪表板及其所有相关数据将不可恢复。',
+          tipMsg: `您确定要删除应用库'${this.info.name}'吗？`,
+          msg: '小心！确认后应用库及其所有相关数据将不可恢复。',
           apiName: 'deleteDashboard'
         }
       }
@@ -193,23 +202,22 @@ export default {
     async init () {
       await this.getDashboardInfos()
       const { description } = this.info.configuration || {}
-      const { assignedCustomers } = this.info || []
-      const customer = assignedCustomers.filter(ele => ele.public === false)
-      const link = `${window.IP_CONFIG.BASE_URL}/dashboard/${this.info.id.id}?publicId=${customer[0].customerId.id}`
-      this.icon = {
-        private: !(!this.info.assignedCustomers || !this.info.assignedCustomers.some(item => item.public === true))
-      }
+      const { assignedCustomers } = this.info || {}
+      const publicInfo = assignedCustomers && assignedCustomers.find(item => item.public)
+      const link = publicInfo ? `${this.$ip('BASE_URL')}/#/dashboard/${this.info.id.id}?publicId=${publicInfo.customerId.id}` : ''
       this.form = {
         title: this.info.title,
         description,
-        id: assignedCustomers.map(ele => ele.customerId.id),
-        customer: customer.map(ele => ele.title).join(','),
+        id: assignedCustomers ? assignedCustomers.map(ele => ele.customerId.id) : '',
+        customer: assignedCustomers && assignedCustomers.map(ele => ele.title).join(','),
         link
       }
     }
   },
-  created () {
-    this.getCustomersList()
+  async created () {
+    if (!this.isCustomer) {
+      await this.getCustomersList()
+    }
     this.init()
   },
   watch: {

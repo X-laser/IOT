@@ -49,18 +49,15 @@
       <el-input v-model="form.region"></el-input>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'AwsSqs',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const delaySeconds = (rule, value, callback) => {
       if (Number(value) < 0) {
@@ -84,6 +81,7 @@ export default {
       callback()
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -143,50 +141,36 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        messageAttributes,
-        accessKeyId,
-        secretAccessKey,
-        region,
-        queueType,
-        queueUrlPattern,
-        delaySeconds
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      let messageAttr = []
-      if (is) {
-        messageAttr = []
-      } else {
-        for (const key in messageAttributes) {
-          messageAttr.push({
-            source: key,
-            target: messageAttributes[key]
-          })
-        }
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const messageAttributes = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.messageAttributes) {
+        messageAttributes.push({
+          source: key,
+          target: forConfiguration.messageAttributes[key]
+        })
       }
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        messageAttributes: messageAttr,
-        accessKeyId,
-        secretAccessKey,
-        region: is ? 'us-east-1' : region,
-        queueType: is ? 'STANDARD' : queueType,
-        queueUrlPattern: is ? 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue-name' : queueUrlPattern,
-        delaySeconds: is ? 0 : delaySeconds,
-        description: description || ''
+      forConfiguration.messageAttributes = messageAttributes
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

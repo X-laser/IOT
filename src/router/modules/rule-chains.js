@@ -5,16 +5,17 @@ export default {
   path: '/rule-chains',
   index: 2,
   component: Layout,
-  auth: ['SYS_ADMIN', 'TENANT_ADMIN'],
+  auth: ['TENANT_ADMIN'],
   children: [
     {
       path: '',
-      meta: { title: '规则链库', icon: 'icon-rule-chains' },
+      meta: { title: '规则链库', icon: 'icon-rule-chain' },
       component: MainContainer,
       children: [
         {
           path: '',
           meta: {
+            cashComponentName: 'RuleChains',
             breadcrumb: [{ title: '规则链库', path: '/rule-chains' }]
           },
           component: () => import('@/views/rule-chains')

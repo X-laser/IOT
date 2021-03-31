@@ -15,7 +15,7 @@
       <el-checkbox v-model="form.telemetry">最新遥测</el-checkbox>
       <ul class="attrMapping">
         <li>
-          <span>{{ form.telemetry ? '原遥测' :  '原属性'}}</span>
+          <span>{{ form.telemetry ? '源遥测' :  '源属性'}}</span>
           <span>目标属性</span>
           <i class="el-icon-circle-plus-outline" @click="add"></i>
         </li>
@@ -27,18 +27,15 @@
       </ul>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'TenantAttributes',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const attrMapping = (rule, value, callback) => {
       const attrMapping = this.form.attrMapping
@@ -46,7 +43,7 @@ export default {
       if (attrMapping.length) {
         attrMapping.forEach(item => {
           if (item.source === '') {
-            callback(new Error(`${isTelemetry ? '原遥测' : '原属性'}不能为空`))
+            callback(new Error(`${isTelemetry ? '源遥测' : '源属性'}不能为空`))
           }
           if (item.target === '') {
             callback(new Error('目标属性不能为空'))
@@ -58,6 +55,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -101,38 +99,36 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { telemetry, attrMapping } = this.nodeInfo.configuration || {}
-      let attrMap = []
-      if (JSON.stringify(this.nodeInfo) === '{}') {
-        attrMap = [
-          { source: 'temperature', target: 'tempo' }
-        ]
-      } else {
-        for (const key in attrMapping) {
-          attrMap.push({
-            source: key,
-            target: attrMapping[key]
-          })
-        }
-      }
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        telemetry: telemetry || false,
-        attrMapping: attrMap,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const attrMapping = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.attrMapping) {
+        attrMapping.push({
+          source: key,
+          target: forConfiguration.attrMapping[key]
+        })
       }
-      console.log(this.form)
+      forConfiguration.attrMapping = attrMapping
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

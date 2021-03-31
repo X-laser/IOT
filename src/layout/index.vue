@@ -46,16 +46,7 @@ export default {
     padding: 0;
     position: relative;
     background-color: #fff;
-    &:after {
-      content: '';
-      display: inline-block;
-      position: absolute;
-      width: calc(100% - #{$sidebar-width});
-      height: 2px;
-      background-color: rgba(224, 224, 224, 0.5);
-      bottom: -2px;
-      right: 0;
-    }
+    border-bottom: 1px solid rgba(224, 224, 224, 0.5);
     /deep/ .logo-container, .el-breadcrumb {
       float: left;
     }
@@ -71,6 +62,7 @@ export default {
         width: calc(100% - 40px);
         height: calc(100% - #{$breadcrumb-height} - 20px);
         margin-left: 20px;
+        border: 1px solid #D5D5D5;
       }
       &.hidden-breadcrumb {
         > .app-container {

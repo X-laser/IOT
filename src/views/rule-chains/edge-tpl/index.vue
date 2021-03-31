@@ -1,10 +1,13 @@
 <template>
   <icloud-dialog :title="title" :visible.sync="visible" @close="close">
     <el-form ref="form" :model="form" :rules="rules">
-      <el-form-item props="link">
+      <el-form-item prop="link">
         <el-select
           v-model="form.link"
           multiple
+          filterable
+          allow-create
+          default-first-option
           placeholder="Link labels">
           <el-option
             v-for="item in linkList"
@@ -27,11 +30,7 @@ export default {
   data () {
     return {
       visible: false,
-      linkList: [
-        { label: 'True', value: 'True' },
-        { label: 'False', value: 'False' },
-        { label: 'Failure', value: 'Failure' }
-      ],
+      linkList: [],
       form: {
         link: []
       },
@@ -49,10 +48,16 @@ export default {
         this.visible = false
       })
     },
-    openDialog ({ link = [] }) {
+    openDialog ({ link = [], linkList = [] }) {
       this.visible = true
       this.title = link.length ? '修改链接' : '添加链接'
       this.form.link = link
+      this.linkList = linkList.map(ele => {
+        return {
+          label: ele,
+          value: ele
+        }
+      })
     },
     close () {
       this.visible = false

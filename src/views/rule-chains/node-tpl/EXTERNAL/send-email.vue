@@ -46,18 +46,15 @@
       </el-form-item>
     </template>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'SendEmail',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const smtpPort = (rule, value, callback) => {
       if (value === '' || value === undefined) {
@@ -78,6 +75,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -121,43 +119,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        useSystemSmtpSettings,
-        smtpHost,
-        smtpPort,
-        username,
-        password,
-        smtpProtocol,
-        timeout,
-        enableTls,
-        tlsVersion
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        useSystemSmtpSettings: is ? true : useSystemSmtpSettings,
-        smtpHost: is ? 'localhost' : smtpHost,
-        smtpPort: is ? 25 : smtpPort,
-        username,
-        password,
-        smtpProtocol: is ? 'smtp' : smtpProtocol,
-        timeout: is ? 10000 : timeout,
-        enableTls,
-        tlsVersion,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -11,7 +11,7 @@
     <el-form-item prop="tellFailureIfAbsent">
       <el-checkbox v-model="form.tellFailureIfAbsent">返回失败</el-checkbox>
     </el-form-item>
-    <span class="desc">如果至少有一个选定的密钥不存在,则出站消息将返回" Failure "</span>
+    <span class="desc">如果至少有一个选定的密钥不存在,则出站消息将返回" 失败 "</span>
     <el-form-item label="客户端属性" prop="clientAttributeNames">
       <el-select
         v-model="form.clientAttributeNames"
@@ -77,18 +77,15 @@
     </el-form-item>
     <span class="desc">如果选中,最新的遥测值将被添加到带有时间戳的出站消息元数据中,例如: "temp": "{\"ts\":1574329385897,\"value\":42}"</span>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'OriginatorAttributes',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
       form: {
@@ -126,36 +123,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        tellFailureIfAbsent,
-        clientAttributeNames,
-        sharedAttributeNames,
-        serverAttributeNames,
-        latestTsKeyNames,
-        getLatestValueWithTs
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        tellFailureIfAbsent: tellFailureIfAbsent || false,
-        clientAttributeNames: clientAttributeNames || [],
-        sharedAttributeNames: sharedAttributeNames || [],
-        serverAttributeNames: serverAttributeNames || [],
-        latestTsKeyNames: latestTsKeyNames || [],
-        getLatestValueWithTs: getLatestValueWithTs || false,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

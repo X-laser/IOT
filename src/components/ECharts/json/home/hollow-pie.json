@@ -1,6 +1,6 @@
 {
   "title": {
-    "text": "设备在线状况",
+    "text": "设备通讯类型分布",
     "top": 17,
     "left": 22,
     "textStyle": {
@@ -10,51 +10,17 @@
   },
   "tooltip": {
     "trigger": "item",
-    "show": true
+    "show": true,
+    "transitionDuration": 0
   },
-  "legend": {
-    "bottom": 25,
-    "data": [
-      {
-        "name": "在线设备",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      },
-      {
-        "name": "离线设备",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      }
-    ],
-    "icon": "circle",
-    "itemWidth": 8,
-    "itemHeight": 8,
-    "itemGap": 77
-  },
-  "color": ["#FFCC4F", "#6993FF"],
   "series": [
     {
-      "name": "总",
       "type": "pie",
       "radius": [50, 70],
       "center": ["50%", "50%"],
       "label": {
-        "formatter": "{d}%"
-      },
-      "data": [
-        {
-          "value": 34,
-          "name": "在线设备"
-        },
-        {
-          "value": 27,
-          "name": "离线设备"
-        }
-      ]
+        "formatter": "{b}"
+      }
     }
   ]
 }

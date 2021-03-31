@@ -9,36 +9,33 @@
       </el-form-item>
     </div>
     <el-form-item prop="useMetadataPeriodInSecondsPatterns">
-      <el-checkbox v-model="form.useMetadataPeriodInSecondsPatterns">以秒为单位使用元数据周期</el-checkbox>
+      <el-checkbox v-model="form.useMetadataPeriodInSecondsPatterns">以秒为单位的元数据模式</el-checkbox>
       <div class="desc">如果选中,则规则节点使用消息元数据中以秒为间隔模式的时间段（假设间隔以秒为单位）</div>
     </el-form-item>
     <template v-if="this.form.useMetadataPeriodInSecondsPatterns">
-      <el-form-item label="以秒为单位的时间" prop="periodInSeconds">
-        <el-input v-model="form.periodInSeconds" :num="0"></el-input>
+      <el-form-item label="以秒为单位使用元数据周期" prop="periodInSecondsPattern">
+        <el-input v-model="form.periodInSecondsPattern"></el-input>
+        <span class="desc">以秒为周期的模式,使用 ${metaKeyName} 替换元数据中的变量</span>
       </el-form-item>
     </template>
     <template v-else>
-      <el-form-item label="以秒为单位的元数据模式" prop="periodInSecondsPattern">
-        <el-input v-model="form.periodInSecondsPattern"></el-input>
-        <span class="desc">以秒为周期的模式,使用 ${metaKeyName} 替换元数据中的变量</span>
+      <el-form-item label="以秒为单位的时间" prop="periodInSeconds">
+        <el-input v-model="form.periodInSeconds" :num="0"></el-input>
       </el-form-item>
     </template>
     <el-form-item label="最大待处理消息数" prop="maxPendingMsgs">
       <el-input v-model="form.maxPendingMsgs" :num="1"></el-input>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'Delay',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const periodInSeconds = (rule, value, callback) => {
       if (Number(value) < 0) {
@@ -59,6 +56,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -92,27 +90,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { periodInSeconds, maxPendingMsgs, periodInSecondsPattern, useMetadataPeriodInSecondsPatterns } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        periodInSeconds,
-        maxPendingMsgs: JSON.stringify(this.nodeInfo) === '{}' ? 1000 : maxPendingMsgs,
-        periodInSecondsPattern: JSON.stringify(this.nodeInfo) === '{}' ? 60 : periodInSecondsPattern,
-        useMetadataPeriodInSecondsPatterns: useMetadataPeriodInSecondsPatterns || false,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -1,14 +1,27 @@
 <template>
   <div class="app-container" ref="appContainer" v-resize="mixinResize">
+    <div class="icon-container">
+      <el-dropdown trigger="click" placement="left-start">
+        <wx-button type="primary" icon="el-icon-plus" circle></wx-button>
+        <el-dropdown-menu slot="dropdown" class="iconfont">
+          <el-dropdown-item icon="icon-guize" @click.native="openDialog('add')">创建新的规则链</el-dropdown-item>
+          <el-dropdown-item icon="icon-daoru" @click.native="openDialog('import')">导入规则</el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
+      <wx-button v-if="selection.length" type="primary" icon="icon-remove" circle @click="deleteMore"></wx-button>
+    </div>
     <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
+      <el-form :model="listQuery" class="filter-container-form" size="medium" :inline="true" @submit.native.prevent>
         <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
-          <el-button type="success" @click="openDialog({ title: '添加规则' })">添加规则</el-button>
+          <el-input v-model="listQuery.textSearch" placeholder="搜索名称" @keyup.enter.native="getList(listQuery)"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="getList(listQuery)">查询</el-button>
         </el-form-item>
       </el-form>
     </div>
     <el-table
+      ref="table"
       :data="list"
       v-loading="loading"
       :default-sort="{prop: 'createdTime', order: 'descending'}"
@@ -16,10 +29,13 @@
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
-      @cell-click="cellClick">
+      @cell-click="cellClick"
+      @selection-change="handleSelectionChange"
+      :row-key="row => row.id.id">
       <el-table-column
         type="selection"
-        width="90">
+        width="90"
+        :reserve-selection="true">
       </el-table-column>
       <el-table-column
         v-for="item in listTitle"
@@ -29,15 +45,13 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <span v-if="item.property === 'btn'" class="center">
-            <el-button size="mini" @click="$router.push({ path: `/rule-chains/${scope.row.id.id}`, query: { title: scope.row.name } })">规则链</el-button>
-            <el-button type="primary" size="mini" @click="openDialog({ type: 'edit', title: `修改${scope.row.name}`, params: { ...scope.row, index: scope.$index + 1 } })">修改</el-button>
-            <el-button v-if="!scope.row.root" type="primary" size="mini" @click="exportRuleChain(scope.row)">导出规则</el-button>
-            <el-button v-if="!scope.row.root" type="primary" size="mini" @click="openMessageBox({ type: 'root', params: scope.row })">创建规则链根</el-button>
-            <el-button type="danger" size="mini" @click="openMessageBox({ type: 'delete', params: scope.row })">删除规则</el-button>
+          <span v-if="item.property === 'btn'" >
+            <el-button type="text" @click="$router.push({ path: `/rule-chains/${scope.row.id.id}`, query: { title: scope.row.name } })">打开规则链</el-button>
+            <el-button type="text" @click="exportRuleChain(scope.row)">导出规则</el-button>
+            <el-button v-if="!scope.row.root" type="text" @click="openMessageBox({ type: 'root', params: scope.row })">创建规则链根</el-button>
+            <el-button v-if="!scope.row.root" type="text" @click="openMessageBox({ type: 'delete', params: scope.row })">删除规则</el-button>
           </span>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>
@@ -56,39 +70,60 @@
       :total="total"
     ></el-pagination>
     <icloud-dialog
-      :title="dialog.title"
-      :visible.sync="dialog.visible"
-      @close="resetForm('form')">
-      <el-form ref="form" :model="dialog.form" :rules="dialog.formRules">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="dialog.form.name"></el-input>
-        </el-form-item>
-        <el-form-item prop="debugMode">
-          <el-checkbox v-model="dialog.form.debugMode">调试模式</el-checkbox>
-        </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input type="textarea" v-model="dialog.form.description"></el-input>
-        </el-form-item>
+      :title="title"
+      :visible.sync="visible">
+      <el-form ref="form" :model="form" :rules="formRules">
+        <!-- 添加规则-->
+        <template v-if="tplType === 'add'">
+          <el-form-item label="名称" prop="name">
+            <el-input v-model="form.name"></el-input>
+          </el-form-item>
+          <el-form-item prop="debugMode">
+            <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
+          </el-form-item>
+          <el-form-item label="描述" prop="description">
+            <el-input type="textarea" autosize v-model="form.description"></el-input>
+          </el-form-item>
+        </template>
+        <!-- 导入规则 -->
+        <template v-else-if="tplType === 'import'">
+          <el-form-item label="规则链文件" prop="file">
+            <el-upload
+              class="el-input"
+              ref="upload"
+              action="#"
+              accept=".json"
+              drag
+              :limit="1"
+              :http-request="httpRequest"
+              :on-remove="onRemove"
+              :on-exceed="handleExceed">
+              <i class="el-icon-upload"></i>
+              <div class="el-upload__text">拖动一个JSON文件或者单击以选择要上传的文件</div>
+            </el-upload>
+          </el-form-item>
+        </template>
       </el-form>
       <div class="icloud-dialog-footer" slot="footer">
-        <wx-button type="primary" @click="submitForm('form')">确定</wx-button>
-        <wx-button @click="dialog.visible = false">取消</wx-button>
+        <wx-button type="primary" @click="submit">确定</wx-button>
+        <wx-button @click="visible = false">取消</wx-button>
       </div>
     </icloud-dialog>
   </div>
 </template>
 
 <script>
-import page from '@/mixins/page'
-import resize from '@/mixins/resize'
+import { page, resize } from '@/mixins'
 import FileSaver from 'file-saver'
 import { getDate } from '@/utils'
 export default {
   mixins: [page, resize],
+  name: 'RuleChains',
   data () {
     return {
       listQuery: {
-        sortOrder: 'DESC'
+        sortOrder: 'DESC',
+        textSearch: ''
       },
       list: [],
       listTitle: [
@@ -97,24 +132,73 @@ export default {
         { property: 'root', label: '根实体', width: 100 },
         { property: 'btn', label: '操作', width: 250 }
       ],
-      dialog: {
-        visible: false,
-        width: '',
-        title: '',
-        type: '',
-        form: {
-          name: '',
-          debugMode: false,
-          description: ''
-        },
-        formRules: {
-          name: [{ required: true, message: '名称不能为空', trigger: 'change' }]
-        }
+      selection: [],
+      visible: false,
+      title: '',
+      tplType: '',
+      form: {
+        name: '',
+        debugMode: false,
+        description: '',
+        file: ''
+      },
+      formRules: {
+        name: [{ required: true, message: '名称不能为空', trigger: 'change' }],
+        file: [{ required: true, message: '上传的文件不能为空', trigger: 'change' }]
       },
       info: {}
     }
   },
   methods: {
+    httpRequest (data) {
+      const isJson = data.file.type === 'application/json'
+      if (isJson) {
+        const reader = new FileReader()
+        reader.onload = evt => {
+          try {
+            this.form.file = JSON.parse(evt.target.result)
+          } catch (error) {
+            this.$message.error(String(error))
+            this.$refs.upload.clearFiles()
+          }
+        }
+        reader.readAsText(data.file)
+      } else {
+        this.$message.error('应用库只能上传JSON文件')
+      }
+    },
+    onRemove (file, fileList) {
+      this.form.file = ''
+    },
+    handleExceed (files, fileList) {
+      this.$message.warning('规则链文件只能上传一个文件')
+    },
+    handleSelectionChange (val) {
+      this.selection = val
+    },
+    openDialog (tplType) {
+      this.tplType = tplType
+      this.title = tplType === 'add' ? '添加规则' : '导入规则'
+      this.visible = true
+    },
+    async deleteMore () {
+      this.$confirm('小心，确认后，所有选定的规则链将被删除，所有相关的数据将变得不可恢复', `确定要删除${this.selection.length}规则链库吗?`, {
+        confirmButtonText: '是',
+        cancelButtonText: '否'
+      }).then(async _ => {
+        try {
+          await Promise.all([
+            ...this.selection.map(item => this.$api.deleteRuleChains(item.id.id))
+          ])
+          this.$message.success('操作成功')
+        } catch (error) {
+          console.log(error)
+        }
+        this.page = 1
+        this.getList()
+        this.$refs.table.clearSelection()
+      }).catch(() => {})
+    },
     sortChange ({ order }) {
       const isDesc = order === 'descending'
       this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
@@ -126,19 +210,31 @@ export default {
       }
     },
     async exportRuleChain (row) {
-      const res = await Promise.all([
-        this.$api.getRuleChainsInfo(row.id.id),
-        this.$api.getRuleChainMetadata(row.id.id)
-      ])
-      if (res[0].status === 200 && res[1].status === 200) {
-        const { additionalInfo, name, firstRuleNodeId, root, debugMode, configuration } = res[0].data
-        const { firstNodeIndex, nodes, connections, ruleChainConnections } = res[1].data
+      try {
+        const result = await Promise.all([
+          this.$api.getRuleChainsInfo(row.id.id),
+          this.$api.getRuleChainMetadata(row.id.id)
+        ])
+        const { additionalInfo, name, firstRuleNodeId, root, debugMode, configuration } = result[0].data
+        const { firstNodeIndex, nodes, connections, ruleChainConnections } = result[1].data
         const data = JSON.stringify({
           ruleChain: { additionalInfo, name, firstRuleNodeId, root, debugMode, configuration },
-          metadata: { firstNodeIndex, nodes, connections, ruleChainConnections }
+          metadata: {
+            firstNodeIndex,
+            nodes: (nodes || []).map(ele => {
+              delete ele.createdTime
+              delete ele.id
+              delete ele.ruleChainId
+              return ele
+            }),
+            connections,
+            ruleChainConnections
+          }
         }, null, 2)
         const blob = new Blob([data], { type: '' })
         FileSaver.saveAs(blob, `${row.name}.json`)
+      } catch (error) {
+        this.$message.error(error.response.data.message)
       }
     },
     openMessageBox ({ type, params }) {
@@ -147,90 +243,95 @@ export default {
         root: '确定要生成规则链根吗?'
       }
       const message = {
-        delete: '小心,在确认规则链和所有相关数据将变得不可恢复',
+        delete: '小心,确认后,规则链和所有相关数据将变得不可恢复',
         root: '确认之后,规则链将变为根规格链,并将处理所有传入的传输消息'
       }
       this.$confirm(message[type], title[type], {
         confirmButtonText: '是',
         cancelButtonText: '否'
       }).then(async _ => {
-        let res = null
-        switch (type) {
-          case 'delete':
-            res = await this.$api.deleteRuleChains(params.id.id)
-            break
-          case 'root':
-            res = await this.$api.createRuleChainsRoot(params.id.id)
-            break
-          default:
-            break
-        }
-        if (res.status === 200) {
+        try {
+          switch (type) {
+            case 'delete':
+              await this.$api.deleteRuleChains(params.id.id)
+              break
+            case 'root':
+              await this.$api.createRuleChainsRoot(params.id.id)
+              break
+            default:
+              break
+          }
           this.$message.success('操作成功')
           this.getList()
-        } else {
-          this.$message.error('操作失败')
+          if (type === 'delete') {
+            this.$refs.table.clearSelection()
+          }
+        } catch (error) {
+          this.$message.error(error.response.data.message)
         }
       }).catch(() => {})
     },
-    openDialog ({ type, params, title }) {
-      this.dialog.visible = true
-      this.dialog.title = title
-      this.dialog.type = type
-      this.info = params
-      if (type === 'edit') {
-        for (const key in this.dialog.form) {
-          if (key === 'description') {
-            this.dialog.form.description = (params.additionalInfo && params.additionalInfo.description) || ''
-          } else {
-            this.dialog.form[key] = params[key]
-          }
-        }
-      }
-    },
-    submitForm (formName) {
-      this.$refs[formName].validate(async valid => {
+    submit () {
+      this.$refs.form.validate(async valid => {
         if (!valid) return false
-        const { name, debugMode, description } = this.dialog.form
-        let params = { name, debugMode, additionalInfo: { description } }
-        if (this.dialog.type === 'edit') {
-          const { id, createdTime, tenantId, firstRuleNodeId, root, configuration, index } = this.info
-          params = Object.assign(params, { id, createdTime, tenantId, firstRuleNodeId, root, configuration, index })
-        }
-        const res = await this.$api.updateRuleChain(params)
-        if (res.status === 200) {
-          this.$message.success('操作成功')
-          this.dialog.visible = false
-          this.getList()
+        const { name, debugMode, description } = this.form
+        const { ruleChain, metadata } = this.form.file
+        const isTpl = this.tplType === 'add'
+        let params = null
+        if (isTpl) {
+          params = { name, debugMode, additionalInfo: { description } }
         } else {
-          this.$message.error('操作失败')
+          params = ruleChain
+        }
+        try {
+          const result = await this.$api.updateRuleChain(params)
+          const ruleChainId = result.data.id
+          if (this.tplType === 'import') {
+            await this.$api.postRuleChainMetadata({
+              ...metadata,
+              ruleChainId
+            })
+          }
+          this.$message.success('操作成功')
+          this.visible = false
+          this.getList()
+        } catch (error) {
+          this.$message.error(error.response.data.message)
         }
       })
     },
-    resetForm (formName) {
-      this.$refs[formName].resetFields()
-    },
-    async getList () {
+    async getList (params) {
       this.loading = true
       try {
-        const res = await this.$api.getRuleChainsList({
-          page: this.page - 1,
+        const result = await this.$api.getRuleChainsList({
+          page: params ? 0 : this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime',
-          sortOrder: this.listQuery.sortOrder
+          ...this.listQuery
         })
-        this.list = res.data.data.map(ele => Object.assign(ele, {
+        this.list = result.data.data.map(ele => Object.assign(ele, {
           createdTime: getDate({ timestamp: ele.createdTime })
         }))
-        this.total = res.data.totalElements
+        this.total = result.data.totalElements
       } catch (error) {
         this.$message.error(error.response.data.message)
       }
       this.loading = false
     }
   },
-  created () {
+  activated () {
     this.getList()
+    this.$refs.table.clearSelection()
+  },
+  watch: {
+    visible (n) {
+      if (!n) {
+        this.$refs.form.resetFields()
+        if (this.tplType === 'import') {
+          this.$refs.upload.clearFiles()
+        }
+      }
+    }
   }
 }
 </script>

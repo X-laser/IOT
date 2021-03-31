@@ -9,11 +9,11 @@
       </el-form-item>
     </div>
     <el-form-item label="设备关联查询"></el-form-item>
-    <el-checkbox v-model="form.fetchLastLevelOnly">Fetch last level relation only</el-checkbox>
+    <el-checkbox v-model="form.fetchLastLevelOnly">只匹配最后一层关联</el-checkbox>
     <el-form-item label="方向" prop="direction" class="direction">
       <el-select v-model="form.direction">
-        <el-option label="从" value="FORM"></el-option>
-        <el-option label="去" value="TO"></el-option>
+        <el-option label="从" value="FROM"></el-option>
+        <el-option label="到" value="TO"></el-option>
       </el-select>
     </el-form-item>
     <el-form-item label="最大关联级别" prop="maxLevel">
@@ -36,22 +36,12 @@
         filterable
         allow-create
         default-first-option>
-        <el-option label="Thermostat" value="Thermostat"></el-option>
-        <el-option label="传感器" value="传感器"></el-option>
-        <el-option label="室内温度计" value="室内温度计"></el-option>
-        <el-option label="室外温度计" value="室外温度计"></el-option>
-        <el-option label="恒温器" value="恒温器"></el-option>
-        <el-option label="控制器" value="控制器"></el-option>
-        <el-option label="温度传感器" value="温度传感器"></el-option>
-        <el-option label="火灾报警设备" value="火灾报警设备"></el-option>
-        <el-option label="烟雾传感器" value="烟雾传感器"></el-option>
-        <el-option label="计数器" value="计数器"></el-option>
-        <el-option label="设备类型1" value="设备类型1"></el-option>
+        <el-option v-for="item in deviceTypeList" :key="item.type" :label="item.type" :value="item.type"></el-option>
       </el-select>
     </el-form-item>
-    <el-checkbox v-model="form.tellFailureIfAbsent">Tell Failure</el-checkbox>
-    <div class="desc">If at least one selected key doesn't exist the outbound message will report "Failure".</div>
-    <el-form-item label="Clint attributes" prop="clientAttributeNames">
+    <el-checkbox v-model="form.tellFailureIfAbsent">告诉失败</el-checkbox>
+    <div class="desc">如果至少有一个选定的键不存在，出站消息将报告“失败”。</div>
+    <el-form-item label="客户属性" prop="clientAttributeNames">
       <el-select
         v-model="form.clientAttributeNames"
         multiple
@@ -66,7 +56,7 @@
         </el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="Shared attributes" prop="sharedAttributeNames">
+    <el-form-item label="共享属性" prop="sharedAttributeNames">
       <el-select
         v-model="form.sharedAttributeNames"
         multiple
@@ -81,7 +71,7 @@
         </el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="Server attributes" prop="serverAttributeNames">
+    <el-form-item label="服务器属性" prop="serverAttributeNames">
       <el-select
         v-model="form.serverAttributeNames"
         multiple
@@ -96,7 +86,7 @@
         </el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="Latest timeseries" prop="latestTsKeyNames">
+    <el-form-item label="最新时间序列" prop="latestTsKeyNames">
       <el-select
         v-model="form.latestTsKeyNames"
         multiple
@@ -113,20 +103,18 @@
     </el-form-item>
     <el-checkbox v-model="form.getLatestValueWithTs"></el-checkbox>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'RelatedDeviceAttributes',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -148,7 +136,8 @@ export default {
         direction: [{ required: true, message: '方向不能为空', trigger: 'change' }],
         deviceTypes: [{ required: true, message: '设备类型不能为空', trigger: 'change' }]
       },
-      options: []
+      options: [],
+      deviceTypeList: []
     }
   },
   methods: {
@@ -177,43 +166,46 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
+    async getDeviceTypes () {
+      const res = await this.$api.getDeviceTypes()
+      this.deviceTypeList = res.data
+    },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        tellFailureIfAbsent,
-        clientAttributeNames,
-        sharedAttributeNames,
-        serverAttributeNames,
-        latestTsKeyNames,
-        getLatestValueWithTs
-      } = this.nodeInfo.configuration || {}
-      const { fetchLastLevelOnly, direction, maxLevel, relationType, deviceTypes } = (this.nodeInfo.configuration && this.nodeInfo.configuration.deviceRelationsQuery) || {} || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
+      Object.assign(configuration, {
         name,
-        debugMode: debugMode || false,
-        fetchLastLevelOnly: fetchLastLevelOnly || false,
-        direction: direction || 'FORM',
-        maxLevel,
-        relationType: relationType || [],
-        deviceTypes: deviceTypes || [],
-        tellFailureIfAbsent: tellFailureIfAbsent || false,
-        clientAttributeNames: clientAttributeNames || [],
-        sharedAttributeNames: sharedAttributeNames || [],
-        serverAttributeNames: serverAttributeNames || [],
-        latestTsKeyNames: latestTsKeyNames || [],
-        getLatestValueWithTs: getLatestValueWithTs || false,
-        description
+        debugMode,
+        description,
+        ...configuration.deviceRelationsQuery
+      })
+      Object.assign(defaultConfiguration, {
+        ...defaultConfiguration.deviceRelationsQuery
+      })
+      const attrMapping = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.attrMapping) {
+        attrMapping.push({
+          source: key,
+          target: forConfiguration.attrMapping[key]
+        })
       }
-      console.log(this.form)
+      forConfiguration.attrMapping = attrMapping
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
+    this.getDeviceTypes()
   }
 }
 </script>

@@ -14,7 +14,10 @@ export default {
       children: [
         {
           path: '',
-          meta: { breadcrumb: [{ title: '实体视图', path: '/entity-views' }] },
+          meta: {
+            cashComponentName: 'Entityviews',
+            breadcrumb: [{ title: '实体视图', path: '/entity-views' }]
+          },
           component: () => import('@/views/entity-views')
         },
         {

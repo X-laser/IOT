@@ -8,7 +8,7 @@
         <el-checkbox v-model="form.debugMode">调试模式</el-checkbox>
       </el-form-item>
     </div>
-    <el-form-item label="名称变幻格式" prop="exchangeNamePattern">
+    <el-form-item label="名称变换格式" prop="exchangeNamePattern">
       <el-input v-model="form.exchangeNamePattern"></el-input>
     </el-form-item>
     <el-form-item label="路由键值格式" prop="routingKeyPattern">
@@ -50,7 +50,7 @@
     <el-form-item label="握手超时(毫秒)" prop="handshakeTimeout">
       <el-input type="number" :min="0" v-model="form.handshakeTimeout"></el-input>
     </el-form-item>
-    <el-form-item label="消息属性" prop="clientProperties" class="attrMapping-container">
+    <el-form-item label="客户端属性" prop="clientProperties" class="attrMapping-container">
       <ul class="attrMapping">
         <li>
           <span>Key</span>
@@ -65,18 +65,15 @@
       </ul>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'Rabbitmq',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const host = (rule, value, callback) => {
       if (value === '' || value === undefined) {
@@ -118,6 +115,7 @@ export default {
       callback()
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -185,60 +183,36 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        exchangeNamePattern,
-        routingKeyPattern,
-        messageProperties,
-        host,
-        port,
-        virtualHost,
-        username,
-        password,
-        automaticRecoveryEnabled,
-        connectionTimeout,
-        handshakeTimeout,
-        clientProperties
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      let clientProp = []
-      if (is) {
-        clientProp = []
-      } else {
-        for (const key in clientProperties) {
-          clientProp.push({
-            source: key,
-            target: clientProperties[key]
-          })
-        }
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const clientProperties = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.clientProperties) {
+        clientProperties.push({
+          source: key,
+          target: forConfiguration.clientProperties[key]
+        })
       }
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        exchangeNamePattern,
-        routingKeyPattern,
-        messageProperties,
-        host: is ? 'localhost' : host,
-        port: is ? 5672 : port,
-        virtualHost: is ? '/' : virtualHost,
-        username: is ? 'guest' : username,
-        password: is ? 'guest' : password,
-        automaticRecoveryEnabled,
-        connectionTimeout: is ? 60000 : connectionTimeout,
-        handshakeTimeout: is ? 10000 : handshakeTimeout,
-        clientProperties: clientProp,
-        description: description || ''
+      forConfiguration.clientProperties = clientProperties
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

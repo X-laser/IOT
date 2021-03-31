@@ -1,14 +1,15 @@
 <template>
   <div class="details-container">
-    <div class="button-container">
-      <wx-button v-if="icon.public" type="warning" @click="open('public')">资产设为公开</wx-button>
+    <div class="button-container" v-if="!isCustomer">
+      <!-- <wx-button v-if="icon.public" type="warning" @click="open('public')">实体视图设为公开</wx-button> -->
       <wx-button v-if="icon.allocation" type="warning" @click="visible = true">分配给客户</wx-button>
       <wx-button v-if="icon.cancelAllocation" type="warning" @click="open('allocation')">取消分配客户</wx-button>
-      <wx-button v-if="icon.provide" type="warning" @click="open('private')">资产设为私有</wx-button>
-      <wx-button type="warning" @click="open('delete')">删除资产</wx-button>
+      <!-- <wx-button v-if="icon.provide" type="warning" @click="open('private')">实体视图设为私有</wx-button> -->
+      <wx-button type="warning" @click="copy()">复制实体视图ID</wx-button>
+      <wx-button type="warning" @click="open('delete')">删除实体视图</wx-button>
     </div>
     <form-info ref="info" :info="info"></form-info>
-    <wx-button style="margin: 20px 0;" type="primary" @click="$refs.info.submit()">修改</wx-button>
+    <wx-button v-if="!isCustomer" style="margin: 20px 0;" type="primary" @click="$refs.info.submit()">修改</wx-button>
     <icloud-dialog
       title="将实体视图分配给客户"
       :visible.sync="visible">
@@ -29,11 +30,13 @@
 
 <script>
 import { FormInfo } from './index.js'
+import { copy } from '@/utils'
 export default {
   props: ['entityId', 'info'],
   components: { FormInfo },
   data () {
     return {
+      isCustomer: this.$store.getters.userInfo.authority === 'CUSTOMER_USER',
       icon: {},
       visible: false,
       form: {
@@ -46,15 +49,18 @@ export default {
     }
   },
   methods: {
+    copy () {
+      copy(this.info.id.id)
+      this.$message.success('实体视图ID已经复制到粘贴板')
+    },
     submit () {
       this.$refs.form.validate(async valid => {
         if (!valid) return false
-        const res = await this.$api.postCustomerEntityView(this.form.id, this.entityId)
-        if (res.status === 200) {
-          this.$message.success('分配成功')
-          this.visible = false
-          this.init()
-        }
+        await this.$api.postCustomerEntityView(this.form.id, this.entityId)
+        this.$message.success('分配成功')
+        this.visible = false
+        this.init()
+        this.$emit('submit')
       })
     },
     open (type) {
@@ -96,6 +102,7 @@ export default {
             this.$router.push({ path: '/entity-views' })
           } else {
             this.init()
+            this.$emit('submit')
           }
         }
       }).catch(() => {})
@@ -117,7 +124,9 @@ export default {
         cancelAllocation: !customerIsPublic && customerTitle,
         provide: customerIsPublic
       }
-      this.getCustomersList()
+      if (!this.isCustomer) {
+        this.getCustomersList()
+      }
     }
   },
   created () {
@@ -127,6 +136,12 @@ export default {
     visible (n) {
       if (!n) {
         this.$refs.form.resetFields()
+      }
+    },
+    info: {
+      deep: true,
+      handler () {
+        this.init()
       }
     }
   }

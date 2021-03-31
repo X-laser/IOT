@@ -1,7 +1,7 @@
 <template>
   <div class="app-container" ref="appContainer" v-resize="mixinResize">
     <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
+      <el-form :model="listQuery" class="filter-container-form" size="medium" :inline="true" @submit.native.prevent>
         <el-form-item label="时间">
           <el-date-picker
             v-model="listQuery.time"
@@ -15,7 +15,10 @@
           </el-date-picker>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
+          <el-input v-model="listQuery.textSearch" placeholder="查找审计日志" @keyup.enter.native="getList(listQuery)"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="getList(listQuery)">查询</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -27,6 +30,7 @@
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]">
+      <el-table-column width="30px"></el-table-column>
       <el-table-column
         v-for="item in listTitle"
         :key="item.label"
@@ -35,10 +39,9 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <span v-if="item.property === 'btn'" class="center">
+          <span v-if="item.property === 'btn'" >
             <i class="el-icon-more" @click="openDialog(scope.row)"></i>
           </span>
           <span v-else>{{ scope.row[item.property] }}</span>
@@ -80,6 +83,7 @@ import pickerOptions from '@/mixins/pickerOptions'
 import { getDate } from '@/utils'
 export default {
   mixins: [page, resize, pickerOptions],
+  name: 'AuditLogs',
   data () {
     return {
       listQuery: {
@@ -87,7 +91,8 @@ export default {
         time: [
           new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 00:00:00`).getTime(),
           new Date(`${getDate({ timestamp: new Date(), format: 'yyyy-MM-dd' })} 23:59:59`).getTime()
-        ]
+        ],
+        textSearch: ''
       },
       list: [],
       listTitle: [
@@ -122,31 +127,37 @@ export default {
         actionFailureDetails: row.actionFailureDetails
       }
     },
-    async getList () {
+    async getList (params) {
       this.loading = true
       try {
         const time = this.listQuery.time || ['', '']
         const res = await this.$api.getAuditLogsList({
-          page: this.page - 1,
+          page: params ? 0 : this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime',
           sortOrder: this.listQuery.sortOrder,
           startTime: time[0],
-          endTime: time[1]
+          endTime: time[1],
+          textSearch: this.listQuery.textSearch
         })
         this.list = res.data.data.map(ele => Object.assign(ele, {
           createdTime: getDate({ timestamp: ele.createdTime }),
           entityType: ele.entityId.entityType
         }))
         this.total = res.data.totalElements
-      } catch (error) {
-        this.$message.error(error.response.data.message)
-      }
+      } catch (error) {}
       this.loading = false
     }
   },
   created () {
     this.getList()
+  },
+  watch: {
+    visible (n) {
+      if (!n) {
+        this.$refs.form.resetFields()
+      }
+    }
   }
 }
 </script>

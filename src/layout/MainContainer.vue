@@ -1,11 +1,19 @@
 <template>
   <div class="main-container">
-    <router-view></router-view>
+    <keep-alive :include="cashViewList">
+      <router-view></router-view>
+    </keep-alive>
   </div>
 </template>
 
 <script>
-export default {}
+export default {
+  computed: {
+    cashViewList () {
+      return this.$store.getters.cashViewList
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -15,6 +23,7 @@ export default {}
     width: calc(100% - 40px);
     height: calc(100% - 20px);
     margin-left: 20px;
+    border: 1px solid #D5D5D5;
   }
 }
 </style>

@@ -9,20 +9,34 @@ export default {
   children: [
     {
       path: '',
-      meta: { title: '仪表板库', icon: 'icon-dashboards' },
+      meta: { title: '应用库', icon: 'icon-dashboards' },
       component: MainContainer,
       children: [
         {
           path: '',
-          meta: { breadcrumb: [{ title: '仪表板库', path: '/dashboards' }] },
+          meta: {
+            cashComponentName: 'Dashboards',
+            breadcrumb: [{ title: '应用库', path: '/dashboards' }]
+          },
           component: () => import('@/views/dashboards')
         },
         {
           path: ':id',
           meta: {
             breadcrumb: [
-              { title: '仪表板库', path: '/dashboards' },
+              { title: '应用库', path: '/dashboards' },
               { title: '', path: '/dashboards/:id' }
+            ]
+          },
+          component: () => import('@/views/dashboards/dashboard-detail'),
+          props: true
+        },
+        {
+          path: ':id/details',
+          meta: {
+            breadcrumb: [
+              { title: '应用库', path: '/dashboards' },
+              { title: '', path: '/dashboards/:id/details' }
             ]
           },
           component: () => import('@/views/dashboards/details'),

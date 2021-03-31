@@ -1,14 +1,21 @@
 <template>
   <div class="app-container" ref="appContainer" v-resize="mixinResize">
+    <div class="icon-container">
+      <wx-button type="primary" icon="el-icon-plus" circle @click="visible = true"></wx-button>
+      <wx-button v-if="selection.length" type="primary" icon="icon-remove" circle @click="deleteMore"></wx-button>
+    </div>
     <div class="filter-container" ref="filterContainer">
-      <el-form :model="listQuery" class="filter-container-form" size="mini" :inline="true">
+      <el-form :model="listQuery" class="filter-container-form" size="medium" :inline="true" @submit.native.prevent>
         <el-form-item>
-          <el-button type="primary" @click="getList()">查询</el-button>
-          <el-button type="success" @click="visible = true">添加账号</el-button>
+          <el-input v-model="listQuery.textSearch" placeholder="搜索电子邮件" @keyup.enter.native="getList()"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="getList(listQuery)">查询</el-button>
         </el-form-item>
       </el-form>
     </div>
     <el-table
+      ref="table"
       :data="list"
       v-loading="loading"
       :default-sort="{prop: 'createdTime', order: 'descending'}"
@@ -16,10 +23,13 @@
       size="mini"
       :height="mixinHeight"
       :class="['configurationTable', {afterRenderClass: mixinShowAfterRenderClass}]"
-      @cell-click="cellClick">
+      @cell-click="cellClick"
+      @selection-change="handleSelectionChange"
+      :row-key="row => row.id.id">
       <el-table-column
         type="selection"
-        width="90">
+        width="90"
+        :reserve-selection="true">
       </el-table-column>
       <el-table-column
         v-for="item in listTitle"
@@ -29,12 +39,11 @@
         :sortable="item.sortable"
         :prop="item.property"
         :sort-orders="['ascending', 'descending']"
-        align="center"
         show-overflow-tooltip>
         <template slot-scope="scope">
-          <span v-if="item.property === 'btn'" class="center">
-            <el-button type="primary" size="mini" @click="login(scope.row.id.id)">以用户身份登录</el-button>
-            <el-button type="primary" size="mini" @click="del(scope.row)">删除</el-button>
+          <span v-if="item.property === 'btn'" >
+            <el-button type="text" @click="login(scope.row.id.id)">以用户身份登录</el-button>
+            <el-button type="text" @click="del(scope.row)">删除</el-button>
           </span>
           <span v-else>{{ scope.row[item.property] }}</span>
         </template>
@@ -53,11 +62,14 @@
       :total="total"
     ></el-pagination>
     <icloud-dialog
-      title="添加账号"
+      title="添加客户用户"
       :visible.sync="visible">
       <el-form ref="form" :model="form" :rules="formRules" size="mini">
         <el-form-item label="电子邮件" prop="email">
           <el-input v-model="form.email"></el-input>
+        </el-form-item>
+        <el-form-item label="证书Key" prop="certKey">
+          <el-input v-model="form.certKey"></el-input>
         </el-form-item>
         <el-form-item label="名字" prop="firstName">
           <el-input v-model="form.firstName"></el-input>
@@ -66,7 +78,7 @@
           <el-input v-model="form.lastName"></el-input>
         </el-form-item>
         <el-form-item label="描述" prop="description">
-          <el-input v-model="form.description"></el-input>
+          <el-input type="textarea" autosize v-model="form.description"></el-input>
         </el-form-item>
         <el-form-item label="激活方式" prop="sendActivationMail">
           <el-select v-model="form.sendActivationMail">
@@ -84,7 +96,7 @@
       :visible.sync="userAcitonVisible"
       title="用户激活链接">
       <div class="link">
-        <span>使用该链接<el-button type="text" class="active">激活</el-button>激活用户</span>
+        <span>使用该链接<el-button type="text" class="active" @click="active">激活</el-button>激活用户</span>
       </div>
       <div class="link-address">
         <code>{{ link }}</code>
@@ -96,13 +108,17 @@
 <script>
 import { page, resize } from '@/mixins'
 import { getDate } from '@/utils'
+import { setToken } from '@/utils/token'
 export default {
   props: ['customerId'],
   mixins: [page, resize],
+  name: 'Users',
   data () {
     return {
+      pageTitle: '',
       listQuery: {
-        sortOrder: 'DESC'
+        sortOrder: 'DESC',
+        textSearch: ''
       },
       list: [],
       listTitle: [
@@ -112,9 +128,11 @@ export default {
         { property: 'email', label: '电子邮件', width: 150 },
         { property: 'btn', label: '操作', width: 250 }
       ],
+      selection: [],
       visible: false,
       form: {
         email: '',
+        certKey: '',
         firstName: '',
         lastName: '',
         description: '',
@@ -131,20 +149,48 @@ export default {
     }
   },
   methods: {
+    active () {
+      if (this.link) {
+        const activateToken = this.link.split('?')[1].split('=')[1]
+        window.open(`${this.$ip('BASE_URL')}/#/login/createPassword?activateToken=${activateToken}`)
+      }
+    },
+    handleSelectionChange (val) {
+      this.selection = val
+    },
+    async deleteMore () {
+      this.$confirm('小心！确认后，所有选定的用户将被删除，所有相关数据将不可恢复', `确定要删除${this.selection.length}用户吗?`, {
+        confirmButtonText: '是',
+        cancelButtonText: '否'
+      }).then(async _ => {
+        try {
+          await Promise.all([
+            ...this.selection.map(item => this.$api.deleteUser(item.id.id))
+          ])
+          this.$message.success('操作成功')
+          this.page = 1
+          this.getList()
+          this.$refs.table.clearSelection()
+        } catch (error) {
+          this.$message.error(error.response.data.message)
+        }
+      }).catch(() => {})
+    },
     sortChange ({ order }) {
       const isDesc = order === 'descending'
       this.listQuery.sortOrder = isDesc ? 'DESC' : 'ASC'
       this.getList()
     },
     async login (userId) {
-      const res = await this.$api.getToken(userId)
-      if (res.status === 200) {
-        this.$store.commit('SET_TOKEN', res.token)
+      try {
+        const result = await this.$api.getToken(userId)
+        setToken(result.data.token, result.data.refreshToken)
         const userInfo = await this.$api.getUserInfo(userId)
-        if (userInfo.status === 200) {
-          this.$store.commit('SET_USER_INFO', userInfo.data)
-          this.$router.push({ path: '/' })
-        }
+        this.$store.commit('SET_USER_INFO', userInfo.data)
+        this.$store.commit('SET_PERMISSION_ROUTER', userInfo.data.authority)
+        this.$router.push({ path: this.$store.getters.permissionRouter[0].path })
+      } catch (error) {
+        this.$router.push({ path: '/login' })
       }
     },
     del (row) {
@@ -156,6 +202,7 @@ export default {
         const res = await this.$api.deleteUser(row.id.id)
         if (res.status === 200) {
           this.$message.success('删除成功')
+          this.$refs.table.clearSelection()
           this.getList()
         }
       }).catch(() => {})
@@ -163,13 +210,19 @@ export default {
     submit (formName) {
       this.$refs[formName].validate(async valid => {
         if (!valid) return false
+        const customerId = {
+          entityType: 'CUSTOMER',
+          id: this.customerId
+        }
+        const tenantId = {
+          entityType: 'TENANT',
+          id: this.$store.getters.userInfo.customerId.id
+        }
         const params = Object.assign({
           additionalInfo: { description: this.form.description },
           authority: 'CUSTOMER_USER',
-          customerId: {
-            entityType: 'CUSTOMER',
-            id: this.customerId
-          }
+          customerId,
+          tenantId
         }, this.form)
         delete params.description
         delete params.sendActivationMail
@@ -187,34 +240,40 @@ export default {
       })
     },
     cellClick (row, column) {
-      if (column.label !== '操作') {
+      if (column.label !== '操作' && column.type !== 'selection') {
         this.$router.push({ path: `/customers/${this.customerId}/users/${row.id.id}`, query: { title: row.name } })
       }
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
     },
-    async getList () {
+    async getList (params) {
       this.loading = true
       try {
-        const res = await this.$api.getCustomersUserList({
-          page: this.page - 1,
+        const res = await this.$api.getOneUsersList({
+          page: params ? 0 : this.page - 1,
           pageSize: this.limit,
           sortProperty: 'createdTime',
-          sortOrder: this.listQuery.sortOrder
-        }, this.customerId)
+          ...this.listQuery
+        }, this.customerId, 'customer')
         this.list = res.data.data.map(ele => Object.assign(ele, {
           createdTime: getDate({ timestamp: ele.createdTime })
         }))
         this.total = res.data.totalElements
-      } catch (error) {
-        this.$message.error(error.response.data.message)
-      }
+      } catch (error) {}
       this.loading = false
+    },
+    async getOneUserInfo () {
+      try {
+        const { data } = await this.$api.getOneUserInfo(this.customerId, 'customer')
+        this.pageTitle = data.title
+      } catch (error) {}
     }
   },
-  created () {
+  activated () {
     this.getList()
+    this.getOneUserInfo()
+    this.$refs.table.clearSelection()
   },
   watch: {
     userAcitonVisible (n) {

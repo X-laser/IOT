@@ -15,6 +15,7 @@ export default {
         {
           path: '',
           meta: {
+            cashComponentName: 'Customers',
             breadcrumb: [{ title: '客户', path: '/customers' }]
           },
           component: () => import('@/views/customers/index')
@@ -33,9 +34,10 @@ export default {
         {
           path: ':customerId/users',
           meta: {
+            cashComponentName: 'Users',
             breadcrumb: [
               { title: '客户', path: '/customers' },
-              { title: '客户账号', path: '/customers/:customerId/users' }
+              { title: '客户用户', path: '/customers/:customerId/users' }
             ]
           },
           component: () => import('@/views/customers/users'),
@@ -46,7 +48,7 @@ export default {
           meta: {
             breadcrumb: [
               { title: '客户', path: '/customers' },
-              { title: '客户账号', path: '/customers/:customerId/users' },
+              { title: '客户用户', path: '/customers/:customerId/users' },
               { title: '', path: '/customers/:customerId/users/:userId' }
             ]
           },
@@ -56,6 +58,7 @@ export default {
         {
           path: ':customerId/assets',
           meta: {
+            cashComponentName: 'CustomerAssets',
             breadcrumb: [
               { title: '客户', path: '/customers' },
               { title: '客户资产', path: '/customers/:customerId/assets' }
@@ -79,6 +82,7 @@ export default {
         {
           path: ':customerId/devices',
           meta: {
+            cashComponentName: 'CustomerDevices',
             breadcrumb: [
               { title: '客户', path: '/customers' },
               { title: '客户设备', path: '/customers/:customerId/devices' }
@@ -102,9 +106,10 @@ export default {
         {
           path: ':customerId/dashboards',
           meta: {
+            cashComponentName: 'CustomerDashboards',
             breadcrumb: [
               { title: '客户', path: '/customers' },
-              { title: '客户仪表板', path: '/customers/:customerId/dashboards' }
+              { title: '客户应用库', path: '/customers/:customerId/dashboards' }
             ]
           },
           component: () => import('@/views/customers/dashboards'),
@@ -115,7 +120,7 @@ export default {
           meta: {
             breadcrumb: [
               { title: '客户', path: '/customers' },
-              { title: '客户仪表板', path: '/customers/:customerId/dashboards' },
+              { title: '客户应用库', path: '/customers/:customerId/dashboards' },
               { title: '', path: '/customers/:customerId/dashboards/:dashboardId/info' }
             ]
           },
@@ -123,15 +128,15 @@ export default {
           props: true
         },
         {
-          path: ':customerId/dashboards/:dashboardId/view',
+          path: ':customerId/dashboards/:id/view',
           meta: {
             breadcrumb: [
               { title: '客户', path: '/customers' },
-              { title: '客户仪表板', path: '/customers/:customerId/dashboards' },
-              { title: '', path: '/customers/:customerId/dashboards/:dashboardId/view' }
+              { title: '客户应用库', path: '/customers/:customerId/dashboards' },
+              { title: '', path: '/customers/:customerId/dashboards/:id/view' }
             ]
           },
-          component: () => import('@/views/customers/dashboards/view'),
+          component: () => import('@/views/dashboards/dashboard-detail'),
           props: true
         }
       ]

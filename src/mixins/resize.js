@@ -26,7 +26,7 @@ export default {
         const appContainerHeight = this.$refs.appContainer.offsetHeight
         const filterContainerHeight = (this.$refs.filterContainer && this.$refs.filterContainer.offsetHeight) || 0
         const paginationHeight = (this.$refs.pagination && this.$refs.pagination.$el.offsetHeight) || 0
-        this.mixinHeight = appContainerHeight - filterContainerHeight - paginationHeight
+        this.mixinHeight = appContainerHeight - filterContainerHeight - paginationHeight - 2
       }, 100)
     },
     mixinUpdatedTableHeight () {

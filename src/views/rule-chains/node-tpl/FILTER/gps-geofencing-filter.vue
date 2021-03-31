@@ -23,7 +23,7 @@
         <el-option label="边" value="POLYGON"></el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="中心点维度" prop="centerLatitude" v-if="!form.fetchPerimeterInfoFromMessageMetadata && form.perimeterType === 'CIRCLE'">
+    <el-form-item label="中心点纬度" prop="centerLatitude" v-if="!form.fetchPerimeterInfoFromMessageMetadata && form.perimeterType === 'CIRCLE'">
       <el-input v-model="form.centerLatitude"></el-input>
     </el-form-item>
     <el-form-item label="中心点经度" prop="centerLongitude" v-if="!form.fetchPerimeterInfoFromMessageMetadata && form.perimeterType === 'CIRCLE'">
@@ -46,26 +46,24 @@
       <span style="color:#808080;fontSize:12px;">请使用以下格式手动定义多边形: [[lat1,lon1],[lat2,lon2], ... ,[latN,lonN]]</span>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'GpsGeofencingFilter',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
       form: {
         name: '',
-        debugMode: false,
+        debugMode: '',
         latitudeKeyName: '',
         longitudeKeyName: '',
-        fetchPerimeterInfoFromMessageMetadata: true,
+        fetchPerimeterInfoFromMessageMetadata: '',
         perimeterType: '',
         centerLatitude: '',
         centerLongitude: '',
@@ -79,7 +77,7 @@ export default {
         latitudeKeyName: [{ required: true, message: '纬度键名不能为空', trigger: 'change' }],
         longitudeKeyName: [{ required: true, message: '经度键名不能为空', trigger: 'change' }],
         perimeterType: [{ required: true, message: '边框类型不能为空', trigger: 'change' }],
-        centerLatitude: [{ required: true, message: '中心点维度不能为空', trigger: 'change' }],
+        centerLatitude: [{ required: true, message: '中心点纬度不能为空', trigger: 'change' }],
         centerLongitude: [{ required: true, message: '中心点经度不能为空', trigger: 'change' }],
         range: [{ required: true, message: '范围不能为空', trigger: 'change' }],
         rangeUnit: [{ required: true, message: '单位不能为空', trigger: 'change' }],
@@ -108,42 +106,27 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        latitudeKeyName,
-        longitudeKeyName,
-        fetchPerimeterInfoFromMessageMetadata,
-        perimeterType,
-        centerLatitude,
-        centerLongitude,
-        range,
-        rangeUnit,
-        polygonsDefinition
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
+      Object.assign(configuration, {
         name,
-        debugMode: debugMode || false,
-        latitudeKeyName: latitudeKeyName || 'latitude',
-        longitudeKeyName: longitudeKeyName || 'longitude',
-        fetchPerimeterInfoFromMessageMetadata: fetchPerimeterInfoFromMessageMetadata !== false && true,
-        perimeterType,
-        centerLatitude,
-        centerLongitude,
-        range,
-        rangeUnit,
-        polygonsDefinition,
+        debugMode,
         description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

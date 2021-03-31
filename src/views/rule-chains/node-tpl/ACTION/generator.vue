@@ -16,17 +16,24 @@
     </el-form-item>
     <div class="type-container">
       <el-form-item label="类型" prop="originatorType">
-        <el-select v-model="form.originatorType" @change="change">
-          <el-option label="设备" value="DEVICE"></el-option>
-          <el-option label="资产" value="ASSET"></el-option>
-          <el-option label="实体视图" value="ENTITY_VIEW"></el-option>
-          <el-option label="租户" value="TENANT"></el-option>
-          <el-option label="客户" value="CUSTOMER"></el-option>
-          <el-option label="仪表板" value="DASHBOARD"></el-option>
+        <el-select v-model="form.originatorType" @change="form.originatorId = ''">
+          <el-option
+            v-for="item in originatorTypeList"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="设备" prop="originatorId">
-        <el-select v-model="form.originatorId">
+      <el-form-item
+        :label="originatorTypeList.filter(item => item.value === form.originatorType)[0].label"
+        prop="originatorId">
+        <el-select
+          v-model="form.originatorId"
+          filterable
+          remote
+          clearable
+          :remote-method="remoteMethod"
+          @focus="remoteMethod(form.originatorId)">
           <el-option v-for="item in types" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
         </el-select>
       </el-form-item>
@@ -38,22 +45,21 @@
         @onCodeChange="$value => form.jsScript = $value" />
       <span>}</span>
     </el-form-item>
-    <wx-button type="primary" @click="test">测试发生器功能</wx-button>
+    <el-button type="primary" size="mini" @click="openTestScript()">测试发生器功能</el-button>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
+    <test-script ref="testScript" title="测试发生器功能"></test-script>
   </el-form>
 </template>
 
 <script>
 import Editor from '@/components/Editor'
+import TestScript from '../test-script'
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
-  components: { Editor },
+  name: 'Generator',
+  props: ['nodeInfo', 'configurationDescriptor'],
+  components: { Editor, TestScript },
   data () {
     const msgCount = (rule, value, callback) => {
       if (Number(value) < 0) {
@@ -74,6 +80,15 @@ export default {
       }
     }
     return {
+      isTplType: false,
+      originatorTypeList: [
+        { label: '设备', value: 'DEVICE' },
+        { label: '资产', value: 'ASSET' },
+        { label: '实体视图', value: 'ENTITY_VIEW' },
+        { label: '租户', value: 'TENANT' },
+        { label: '客户', value: 'CUSTOMER' },
+        { label: '应用库', value: 'DASHBOARD' }
+      ],
       form: {
         name: '',
         msgCount: '',
@@ -87,65 +102,76 @@ export default {
       rules: {
         name: [{ required: true, message: '名称不能为空', trigger: 'change' }],
         msgCount: [{ required: true, validator: msgCount, trigger: 'change' }],
+        originatorId: [{ required: true, message: '该项不能为空', trigger: 'change' }],
         periodInSeconds: [{ required: true, validator: periodInSeconds, trigger: 'change' }]
       },
       types: []
     }
   },
   methods: {
-    test () {
-      alert('测试功能待开发')
+    openTestScript () {
+      this.$refs.testScript.openDialog({
+        msg: JSON.stringify({
+          temperature: 22.4,
+          humidity: 78
+        }, null, 2),
+        script: this.form.jsScript,
+        metaData: [
+          { key: 'deviceType', value: 'default' },
+          { key: 'deviceName', value: 'Test Device' },
+          { key: 'ts', value: new Date().getTime() }
+        ],
+        scriptType: 'generate',
+        funName: 'Generate'
+      })
     },
-    async change (value, init) {
-      console.log(value)
-      if (init !== 'init') {
-        this.types = []
-        this.form.originatorId = ''
-      }
-      let apiName = ''
-      let params = {
-        pageSize: 50,
+    async remoteMethod (query, init) {
+      if (!this.form.originatorType) return false
+      this.types.forEach(item => {
+        if (item.id.id === query) {
+          query = item.name
+        }
+      })
+      const params = {
         page: 0,
-        sortProperty: 'name',
-        sortOrder: 'ASC'
+        pageSize: 50,
+        sortOrder: 'ASC',
+        textSearch: query
       }
-      switch (value) {
+      let result = null
+      switch (this.form.originatorType) {
         case 'DEVICE':
-          apiName = 'getDeviceInfo'
+          result = init ? await this.$api.getOneDeviceInfo(query) : await this.$api.getDeviceInfo(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ASSET':
-          apiName = 'getAssetInfos'
+          result = init ? await this.$api.getOneAssetInfo(query) : await this.$api.getAssetInfos(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ENTITY_VIEW':
-          apiName = 'getEntityViewList'
+          result = init ? await this.$api.getEntityView(query) : await this.$api.getEntityViewList(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'TENANT':
-          apiName = 'getTenantInfos'
-          params = 'e65c8de0-aa12-11ea-80f5-9b5ada2d0814'
+          result = init ? await this.$api.getTenantInfos(query) : await this.$api.getTenantInfos(this.$store.getters.userInfo.tenantId.id)
           break
         case 'CUSTOMER':
-          apiName = 'getCustomersList'
-          params = {
-            ...params,
+          result = init ? await this.$api.getCustomersInfo(query) : await this.$api.getCustomersList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         case 'DASHBOARD':
-          apiName = 'getDashboardsList'
-          params = {
-            ...params,
+          result = init ? await this.$api.getDashboardInfo(query) : await this.$api.getDashboardsList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         default:
           break
       }
-      const res = await this.$api[apiName](params)
-      if (value === 'TENANT') {
-        this.types = [res.data]
-      } else {
-        this.types = res.data.data
-      }
+      this.types = result.data.data || [result.data]
     },
     submit () {
       this.$refs.form.validate(valid => {
@@ -163,32 +189,33 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { msgCount, periodInSeconds, originatorType, originatorId, jsScript } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const defaultJsScript = 'var msg = { temp: 42, humidity: 77 };\nvar metadata = { data: 40 };\nvar msgType = "POST_TELEMETRY_REQUEST";\n\nreturn { msg: msg, metadata: metadata, msgType: msgType }'
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        msgCount: JSON.stringify(this.nodeInfo) === '{}' ? 0 : msgCount,
-        periodInSeconds: JSON.stringify(this.nodeInfo) === '{}' ? 1 : periodInSeconds,
-        originatorType,
-        originatorId,
-        jsScript: JSON.stringify(this.nodeInfo) === '{}' ? defaultJsScript : jsScript,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      if (originatorType) {
-        this.change(originatorType, 'init')
+      if (this.form.originatorId) {
+        this.remoteMethod(this.form.originatorId, true)
       }
-      console.log(this.form)
+      if (!this.form.originatorType) {
+        this.form.originatorType = 'DEVICE'
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -9,50 +9,63 @@
       </el-form-item>
     </div>
     <el-form-item prop="checkForSingleEntity">
-      <el-checkbox v-model="form.checkForSingleEntity">Check relation to specific entity</el-checkbox>
+      <el-checkbox v-model="form.checkForSingleEntity">检查与特定实体的关系</el-checkbox>
     </el-form-item>
     <el-form-item label="方向" prop="direction">
       <el-select v-model="form.direction">
-        <el-option lable="从" value="FORM"></el-option>
-        <el-option lable="到" value="TO"></el-option>
+        <el-option label="从" value="FROM"></el-option>
+        <el-option label="到" value="TO"></el-option>
       </el-select>
     </el-form-item>
     <el-form-item label="类型" prop="entityType" v-if="form.checkForSingleEntity">
-      <el-select v-model="form.entityType" @change="change">
-        <el-option label="设备" value="DEVICE"></el-option>
-        <el-option label="资产" value="ASSET"></el-option>
-        <el-option label="实体视图" value="ENTITY_VIEW"></el-option>
-        <el-option label="租户" value="TENANT"></el-option>
-        <el-option label="客户" value="CUSTOMER"></el-option>
-        <el-option label="仪表板" value="DASHBOARD"></el-option>
+      <el-select v-model="form.entityType" @change="form.entityId = ''">
+        <el-option
+          v-for="item in entityTypeList"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value" />
       </el-select>
     </el-form-item>
-    <el-form-item label="设备" prop="entityId" v-if="form.checkForSingleEntity">
-      <el-select v-model="form.entityId">
+    <el-form-item
+      v-if="form.checkForSingleEntity"
+      :label="entityTypeList.filter(item => item.value === form.entityType)[0].label"
+      prop="entityId">
+      <el-select
+        v-model="form.entityId"
+        filterable
+        remote
+        :remote-method="remoteMethod"
+        @focus="remoteMethod()">
         <el-option v-for="item in types" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
       </el-select>
     </el-form-item>
     <el-form-item label="关联类型" prop="relationType">
-      <el-select v-model="form.relationType">
+      <el-select allow-create filterable v-model="form.relationType">
         <el-option label="Contains" value="Contains"></el-option>
         <el-option label="Manages" value="Manages"></el-option>
       </el-select>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'CheckRelation',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     return {
+      isTplType: false,
+      entityTypeList: [
+        { label: '设备', value: 'DEVICE' },
+        { label: '资产', value: 'ASSET' },
+        { label: '实体视图', value: 'ENTITY_VIEW' },
+        { label: '租户', value: 'TENANT' },
+        { label: '客户', value: 'CUSTOMER' },
+        { label: '应用库', value: 'DASHBOARD' }
+      ],
       form: {
         name: '',
         debugMode: false,
@@ -74,56 +87,48 @@ export default {
     }
   },
   methods: {
-    async change (value, init) {
-      console.log(value)
-      if (init !== 'init') {
-        this.types = []
-        this.form.entityId = ''
-      }
-      let apiName = ''
-      let params = {
-        pageSize: 50,
+    async remoteMethod (query, init) {
+      if (!this.form.entityType) return false
+      const params = {
         page: 0,
-        sortProperty: 'name',
-        sortOrder: 'ASC'
+        pageSize: 50,
+        sortOrder: 'ASC',
+        textSearch: init ? '' : query
       }
-      switch (value) {
+      let result = null
+      switch (this.form.entityType) {
         case 'DEVICE':
-          apiName = 'getDeviceInfo'
+          result = await this.$api.getDeviceInfo(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ASSET':
-          apiName = 'getAssetInfos'
+          result = await this.$api.getAssetInfos(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'ENTITY_VIEW':
-          apiName = 'getEntityViewList'
+          result = await this.$api.getEntityViewList(Object.assign({
+            sortProperty: 'name'
+          }, params))
           break
         case 'TENANT':
-          apiName = 'getTenantInfos'
-          params = 'e65c8de0-aa12-11ea-80f5-9b5ada2d0814'
+          result = await this.$api.getTenantInfos(this.$store.getters.userInfo.tenantId.id)
           break
         case 'CUSTOMER':
-          apiName = 'getCustomersList'
-          params = {
-            ...params,
+          result = await this.$api.getCustomersList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         case 'DASHBOARD':
-          apiName = 'getDashboardsList'
-          params = {
-            ...params,
+          result = await this.$api.getDashboardsList(Object.assign({
             sortProperty: 'title'
-          }
+          }, params))
           break
         default:
           break
       }
-      const res = await this.$api[apiName](params)
-      if (value === 'TENANT') {
-        this.types = [res.data]
-      } else {
-        this.types = res.data.data
-      }
+      this.types = result.data.data || [result.data]
     },
     submit () {
       this.$refs.form.validate(valid => {
@@ -141,32 +146,33 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
-    async init () {
-      console.log(this.nodeInfo)
+    init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { checkForSingleEntity, direction, entityType, entityId, relationType } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        checkForSingleEntity: checkForSingleEntity || false,
-        direction: direction || 'FORM',
-        entityType: entityType || '',
-        entityId: entityId || '',
-        relationType: relationType || '',
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      if (this.form.checkForSingleEntity) {
-        this.change(this.form.entityType, 'init')
+      if (this.form.entityId) {
+        this.remoteMethod(this.form.entityId, 'init')
       }
-      console.log(this.form)
+      if (!this.form.entityType) {
+        this.form.entityType = 'DEVICE'
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

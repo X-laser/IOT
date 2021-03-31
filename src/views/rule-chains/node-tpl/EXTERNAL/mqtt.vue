@@ -27,7 +27,7 @@
       <el-input v-model="form.clientId"></el-input>
     </el-form-item>
     <el-form-item prop="cleanSession">
-      <el-checkbox v-model="form.cleanSession">Clean session</el-checkbox>
+      <el-checkbox v-model="form.cleanSession">清除会话</el-checkbox>
     </el-form-item>
     <el-form-item prop="ssl">
       <el-checkbox v-model="form.ssl">启用SSL</el-checkbox>
@@ -99,7 +99,7 @@
       </el-collapse>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
@@ -107,11 +107,8 @@
 <script>
 import { getBase64 } from '@/utils'
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'Mqtt',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const port = (rule, value, callback) => {
       if (value === '' || value === undefined) {
@@ -124,14 +121,15 @@ export default {
     }
     const connectTimeoutSec = (rule, value, callback) => {
       if (value === '' || value === undefined) {
-        callback(new Error('connectTimeoutSec不能为空'))
+        callback(new Error('连接超时不能为空'))
       } else if (Number(value) <= 1 || Number(value) >= 200) {
-        callback(new Error('connectTimeoutSec取值应在1到200之间'))
+        callback(new Error('连接超时取值应在1到200之间'))
       } else {
         callback()
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -149,7 +147,9 @@ export default {
         privateKeyFileName: '',
         privateKey: '',
         privatePassword: '',
-        description: ''
+        description: '',
+        cleanSession: '',
+        clientId: ''
       },
       rules: {
         name: [{ required: true, message: '名称不能为空', trigger: 'change' }],
@@ -158,8 +158,7 @@ export default {
         port: [{ required: true, validator: port, trigger: 'change' }],
         connectTimeoutSec: [{ required: true, validator: connectTimeoutSec, trigger: 'change' }],
         type: [{ required: true, message: '凭证类型不能为空', trigger: 'change' }],
-        username: [{ required: true, validator: port, trigger: 'change' }],
-        password: [{ required: true, validator: port, trigger: 'change' }],
+        username: [{ required: true, message: '用户名不能为空', trigger: 'change' }],
         caCert: [{ required: true, message: 'CA证书文件不能为空', trigger: 'change' }],
         cert: [{ required: true, message: '证书文件不能为空', trigger: 'change' }],
         privateKey: [{ required: true, message: '私人密钥文件不能为空', trigger: 'change' }],
@@ -204,20 +203,20 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         }
         if (this.form.type === 'anonymous') {
-          params.credentials = {
+          params.configuration.credentials = {
             type: this.form.type
           }
         } else if (this.form.type === 'basic') {
-          params.credentials = {
+          params.configuration.credentials = {
             type: this.form.type,
             username: this.form.username,
             password: this.form.password
           }
         } else if (this.form.type === 'cert.PEM') {
-          params.credentials = {
+          params.configuration.credentials = {
             type: this.form.type,
             caCertFileName: this.form.caCertFileName,
             caCert: this.form.caCert,
@@ -232,55 +231,28 @@ export default {
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        topicPattern,
-        host,
-        port,
-        connectTimeoutSec,
-        clientId,
-        cleanSession,
-        ssl
-      } = this.nodeInfo.configuration || {}
-      const {
-        type,
-        username,
-        password,
-        caCertFileName,
-        caCert,
-        certFileName,
-        cert,
-        privateKeyFileName,
-        privateKey
-      } = (this.nodeInfo.configuration && this.nodeInfo.configuration.credentials) || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        topicPattern: is ? 'my-topic' : topicPattern,
-        host: is ? 'localhost' : host,
-        port: is ? '1883' : port,
-        connectTimeoutSec: is ? '10' : connectTimeoutSec,
-        clientId,
-        cleanSession: is ? true : cleanSession,
-        ssl,
-        type: is ? 'anonymous' : type,
-        username,
-        password,
-        caCertFileName,
-        caCert,
-        certFileName,
-        cert,
-        privateKeyFileName,
-        privateKey,
-        privatePassword: type === 'cert.PEM' ? password : '',
-        description: description || ''
+      const { ...credentials } = (this.nodeInfo.configuration && this.nodeInfo.configuration.credentials) || {}
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description,
+        ...credentials
+      })
+      Object.assign(defaultConfiguration, {
+        ...defaultConfiguration.credentials
+      })
+      console.log(this.nodeInfo)
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

@@ -23,7 +23,7 @@
     <el-form-item prop="useSimpleClientHttpFactory">
       <el-checkbox v-model="form.useSimpleClientHttpFactory">使用简单那客户端HTTP工厂</el-checkbox>
     </el-form-item>
-    <el-form-item v-if="!form.useSimpleClientHttpFactory" label="以毫秒为单位的读取超时" prop="readTimeoutMs">
+    <el-form-item v-if="!form.useSimpleClientHttpFactory" label="读取超时(以毫秒为单位)" prop="readTimeoutMs">
       <el-input type="number" :num="0" v-model="form.readTimeoutMs"></el-input>
       <span class="desc">值为0表示无限超时</span>
     </el-form-item>
@@ -31,12 +31,12 @@
       <el-input type="number" :num="0" v-model="form.maxParallelRequestsCount"></el-input>
       <span class="desc">值为0表示在并行处理中没有限制</span>
     </el-form-item>
-    <el-form-item label="Headers" prop="headers" class="attrMapping-container">
+    <el-form-item label="请求头" prop="headers" class="attrMapping-container">
       <div class="desc">使用 ${metaKeyName} 替换元数据中header/value的值</div>
       <ul class="attrMapping">
         <li>
-          <span>Header</span>
-          <span>Value</span>
+          <span>键</span>
+          <span>键值</span>
           <i class="el-icon-circle-plus-outline" @click="add"></i>
         </li>
         <li v-for="(item, index) in form.headers" :key="index">
@@ -58,18 +58,15 @@
       </el-form-item>
     </template>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'RestApiCall',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const headers = (rule, value, callback) => {
       const headers = this.form.headers
@@ -111,6 +108,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -172,54 +170,36 @@ export default {
           additionalInfo: {
             description: this.form.description
           },
-          tplType: Object.is(JSON.stringify(this.nodeInfo), '{}') || 'edit'
+          tplType: this.isTplType ? 'add' : 'edit'
         })
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const {
-        headers,
-        restEndpointUrlPattern,
-        requestMethod,
-        useSimpleClientHttpFactory,
-        useRedisQueueForMsgPersistence,
-        trimQueue,
-        maxQueueSize,
-        maxParallelRequestsCount,
-        readTimeoutMs
-      } = this.nodeInfo.configuration || {}
       const { description } = this.nodeInfo.additionalInfo || {}
-      const is = JSON.stringify(this.nodeInfo) === '{}'
-      let header = []
-      if (is) {
-        header = []
-      } else {
-        for (const key in headers) {
-          header.push({
-            source: key,
-            target: headers[key]
-          })
-        }
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const headers = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.headers) {
+        headers.push({
+          source: key,
+          target: forConfiguration.headers[key]
+        })
       }
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        headers: header,
-        restEndpointUrlPattern: is ? 'http://localhost/api' : restEndpointUrlPattern,
-        requestMethod: is ? 'POST' : requestMethod,
-        useSimpleClientHttpFactory,
-        useRedisQueueForMsgPersistence,
-        trimQueue,
-        maxQueueSize: is ? 0 : maxQueueSize,
-        maxParallelRequestsCount: is ? 0 : maxParallelRequestsCount,
-        readTimeoutMs: is ? 0 : readTimeoutMs,
-        description: description || ''
+      forConfiguration.headers = headers
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
       }
-      console.log(this.form)
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

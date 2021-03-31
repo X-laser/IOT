@@ -10,73 +10,19 @@
   },
   "tooltip": {
     "trigger": "item",
-    "formatter": "{b} : {c} ({d}%)"
+    "show": true,
+    "transitionDuration": 0
   },
   "legend": {
-    "data": [
-      {
-        "name": "飞行区",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      },
-      {
-        "name": "航站楼",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      },
-      {
-        "name": "机房",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      },
-      {
-        "name": "公共区",
-        "textStyle": {
-          "fontSize": 14,
-          "color": "#787878"
-        }
-      }
-    ],
-    "bottom": 25,
-    "icon": "circle",
-    "itemWidth": 8,
-    "itemHeight": 8,
-    "itemGap": 27
+    "show": false
   },
-  "color": ["#FFCC4F", "#6993FF", "#FF82B0", "#7B69FF"],
   "series": [
     {
       "type": "pie",
-      "radius": [0, 60],
-      "roseType": "area",
-      "center": ["50%", "50%"],
+      "radius": [50, 70],
       "label": {
-        "formatter": "{d}%"
-      },
-      "data": [
-        {
-          "value": 34,
-          "name": "飞行区"
-        },
-        {
-          "value": 27,
-          "name": "航站楼"
-        },
-        {
-          "value": 21,
-          "name": "机房"
-        },
-        {
-          "value": 18,
-          "name": "公共区"
-        }
-      ]
+        "formatter": "{b}"
+      }
     }
   ]
 }

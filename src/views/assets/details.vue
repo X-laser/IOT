@@ -1,96 +1,71 @@
 <template>
   <div class="app-container details-container">
     <div class="btn-container">
-      <wx-button type="primary" icon="iconiconfontcheck" circle @click="submit('form')"></wx-button>
-      <wx-button type="primary" icon="iconcuo" circle @click="$router.push({ path: '/assets' })"></wx-button>
-    </div>
-    <div class="title-container">
-      <h3 class="title">{{ assetsInfo.name }}</h3>
-      <div class="details">资产详情</div>
+      <wx-button type="primary" icon="icon-cuo" circle @click="$router.push({ path: '/assets' })"></wx-button>
     </div>
     <el-tabs type="border-card">
-      <el-tab-pane label="详情">
-        <div class="button-container">
-          <wx-button type="warning">资产设为公开</wx-button>
-          <wx-button type="warning">分配给客户</wx-button>
-          <wx-button type="warning">删除资产</wx-button>
-        </div>
-        <el-form ref="form" :model="form" :rules="rules">
-          <el-form-item label="名称" prop="name">
-            <el-input v-model="form.name"></el-input>
-          </el-form-item>
-          <el-form-item label="资产类型" prop="type">
-            <el-input v-model="form.type"></el-input>
-          </el-form-item>
-          <el-form-item label="标签" prop="label">
-            <el-input v-model="form.label"></el-input>
-          </el-form-item>
-          <el-form-item label="描述" prop="description">
-            <el-input v-model="form.description"></el-input>
-          </el-form-item>
-        </el-form>
-      </el-tab-pane>
-      <el-tab-pane label="属性">属性</el-tab-pane>
-      <el-tab-pane label="最新遥测">最新遥测</el-tab-pane>
-      <el-tab-pane label="警告">警告</el-tab-pane>
-      <el-tab-pane label="事件">事件</el-tab-pane>
-      <el-tab-pane label="关联">关联</el-tab-pane>
-      <el-tab-pane label="审计日志">审计日志</el-tab-pane>
+      <template v-for="item in tabPaneList">
+        <el-tab-pane v-if="item.show" :key="item.label" :label="item.label">
+          <component
+            v-if="JSON.stringify(info) !== '{}'"
+            :is="item.componentName"
+            :assetId="assetId"
+            :info="info"
+            @submit="getItemAssetInfo"></component>
+        </el-tab-pane>
+      </template>
     </el-tabs>
   </div>
 </template>
 
 <script>
+import {
+  DetailsInfo,
+  Attribute,
+  Telemetering,
+  Alarm,
+  Event,
+  Relation,
+  Log
+} from './components'
 export default {
   props: ['assetId'],
+  components: {
+    DetailsInfo,
+    Attribute,
+    Telemetering,
+    Alarm,
+    Event,
+    Relation,
+    Log
+  },
   data () {
     return {
-      assetsInfo: {},
-      form: {
-        name: '',
-        type: '',
-        label: '',
-        description: ''
-      },
-      rules: {
-        name: [{ required: true, message: '名称不能为空', trigger: 'change' }],
-        type: [{ required: true, message: '资产类型不能为空', trigger: 'change' }]
-      }
+      tabPaneList: [
+        { label: '详情', componentName: 'DetailsInfo', show: true },
+        { label: '属性', componentName: 'Attribute', show: true },
+        { label: '最新遥测', componentName: 'Telemetering', show: true },
+        { label: '警告', componentName: 'Alarm', show: true },
+        { label: '事件', componentName: 'Event', show: true },
+        { label: '关联', componentName: 'Relation', show: true },
+        { label: '审计日志', componentName: 'Log', show: this.$store.getters.userInfo.authority !== 'CUSTOMER_USER' }
+      ],
+      info: {}
     }
   },
   methods: {
-    submit () {
-      this.$refs.form.validate(async valid => {
-        if (!valid) return false
-        const params = {
-          ...this.assetsInfo,
-          ...this.form,
-          additionalInfo: {
-            description: this.form.description
-          }
-        }
-        delete params.description
-        const res = await this.$api.postAsset(params)
-        if (res.status === 200) {
-          this.$message.success('资产修改成功')
-          this.$router.push({ path: `/assets/${this.assetId}`, query: { title: this.form.name } })
-          this.getAssetsInfo()
-        }
-      })
-    },
-    async getAssetsInfo () {
-      const res = await this.$api.getAssetInfos({
-        page: 0,
-        pageSize: 999999
-      })
-      this.assetsInfo = res.data.data.filter(item => item.id.id === this.assetId)[0]
-      for (const key in this.form) {
-        this.form[key] = key === 'description' ? this.assetsInfo.additionalInfo && this.assetsInfo.additionalInfo.description : this.assetsInfo[key]
-      }
+    async getItemAssetInfo () {
+      try {
+        const res = await this.$api.getItemAssetInfo(this.assetId)
+        this.info = res.data
+      } catch (error) {}
     }
   },
   created () {
-    this.getAssetsInfo()
+    this.getItemAssetInfo()
+  },
+  beforeDestroy () {
+    this.$store.dispatch('websocketAllUnsubscribe')
   }
 }
 </script>

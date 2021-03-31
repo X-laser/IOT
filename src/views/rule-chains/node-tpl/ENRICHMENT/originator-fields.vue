@@ -26,18 +26,15 @@
       </ul>
     </el-form-item>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 export default {
-  props: {
-    nodeInfo: {
-      type: Object
-    }
-  },
+  name: 'OriginatorFields',
+  props: ['nodeInfo', 'configurationDescriptor'],
   data () {
     const fieldsMapping = (rule, value, callback) => {
       const fieldsMapping = this.form.fieldsMapping
@@ -56,6 +53,7 @@ export default {
       }
     }
     return {
+      isTplType: false,
       form: {
         name: '',
         debugMode: '',
@@ -102,33 +100,31 @@ export default {
       })
     },
     init () {
+      const { ...defaultConfiguration } = this.configurationDescriptor.nodeDefinition.defaultConfiguration
+      const { ...configuration } = this.nodeInfo.configuration || {}
       const { name, debugMode } = this.nodeInfo
-      const { fieldsMapping } = this.nodeInfo.configuration || {}
-      let fieldsMap = []
-      if (JSON.stringify(this.nodeInfo) === '{}') {
-        fieldsMap = [
-          { source: 'name', target: 'originatorName' },
-          { source: 'type', target: 'originatorType' }
-        ]
-      } else {
-        for (const key in fieldsMapping) {
-          fieldsMap.push({
-            source: key,
-            target: fieldsMapping[key]
-          })
-        }
-      }
       const { description } = this.nodeInfo.additionalInfo || {}
-      this.form = {
-        name: name || '',
-        debugMode: debugMode || false,
-        fieldsMapping: fieldsMap,
-        description: description || ''
+      Object.assign(configuration, {
+        name,
+        debugMode,
+        description
+      })
+      const fieldsMapping = []
+      const forConfiguration = this.isTplType ? defaultConfiguration : configuration
+      for (const key in forConfiguration.fieldsMapping) {
+        fieldsMapping.push({
+          source: key,
+          target: forConfiguration.fieldsMapping[key]
+        })
       }
-      console.log(this.form)
+      forConfiguration.fieldsMapping = fieldsMapping
+      for (const key in this.form) {
+        this.form[key] = this.isTplType ? defaultConfiguration[key] : configuration[key]
+      }
     }
   },
   created () {
+    this.isTplType = Object.is(JSON.stringify(this.nodeInfo), '{}')
     this.init()
   }
 }

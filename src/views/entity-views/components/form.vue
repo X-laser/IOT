@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules">
+  <el-form ref="form" :model="form" :rules="rules" :disabled="isCustomer">
     <el-form-item label="名称" prop="name">
       <el-input v-model="form.name"></el-input>
     </el-form-item>
@@ -15,13 +15,19 @@
     <el-form-item class="targer-entity" label="目标实体"></el-form-item>
     <div class="entity-container">
       <el-form-item label="类型" prop="entityType">
-        <el-select v-model="form.entityType" @change="entityTypeChange">
+        <el-select v-model="form.entityType" @change="form.id = ''">
           <el-option label="设备" value="DEVICE"></el-option>
           <el-option label="资产" value="ASSET"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item v-if="form.entityType" :label="form.entityType === 'DEVICE' ? '设备' : '资产'" prop="id">
-        <el-select v-model="form.id">
+        <el-select
+          v-model="form.id"
+          filterable
+          remote
+          reserve-keyword
+          :remote-method="handlerEntityType"
+          @focus="handlerEntityType()">
           <el-option v-for="item in typeList" :key="item.id.id" :label="item.name" :value="item.id.id"></el-option>
         </el-select>
       </el-form-item>
@@ -35,9 +41,9 @@
             filterable
             allow-create
             default-first-option
-            v-model="form.cs">
-            <el-option label="inactivityAlarmTime" value="inactivityAlarmTime"></el-option>
-            <el-option label="active" value="active"></el-option>
+            v-model="form.cs"
+            @focus="getAttribute(form.entityType, form.id, 'CLIENT_SCOPE')">
+            <el-option v-for="item in attrList['CLIENT_SCOPE']" :key="item.key" :label="item.key" :value="item.key"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="共享属性" prop="sh">
@@ -46,9 +52,9 @@
             filterable
             allow-create
             default-first-option
-            v-model="form.sh">
-            <el-option label="inactivityAlarmTime" value="inactivityAlarmTime"></el-option>
-            <el-option label="active" value="active"></el-option>
+            v-model="form.sh"
+            @focus="getAttribute(form.entityType, form.id, 'SHARED_SCOPE')">
+            <el-option v-for="item in attrList['SHARED_SCOPE']" :key="item.key" :label="item.key" :value="item.key"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="服务端属性" prop="ss">
@@ -57,9 +63,9 @@
             filterable
             allow-create
             default-first-option
-            v-model="form.ss">
-            <el-option label="inactivityAlarmTime" value="inactivityAlarmTime"></el-option>
-            <el-option label="active" value="active"></el-option>
+            v-model="form.ss"
+            @focus="getAttribute(form.entityType, form.id, 'SERVER_SCOPE')">
+            <el-option v-for="item in attrList['SERVER_SCOPE']" :key="item.key" :label="item.key" :value="item.key"></el-option>
           </el-select>
         </el-form-item>
       </el-collapse-item>
@@ -71,9 +77,9 @@
             filterable
             allow-create
             default-first-option
-            v-model="form.timeseries">
-            <el-option label="humidity" value="humidity"></el-option>
-            <el-option label="temp" value="temp"></el-option>
+            v-model="form.timeseries"
+            @focus="getAttribute(form.entityType, form.id, 'timeseries')">
+            <el-option v-for="item in attrList['timeseries']" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
       </el-collapse-item>
@@ -99,7 +105,7 @@
       </el-form-item>
     </div>
     <el-form-item label="描述" prop="description">
-      <el-input type="textarea" v-model="form.description"></el-input>
+      <el-input type="textarea" autosize v-model="form.description"></el-input>
     </el-form-item>
   </el-form>
 </template>
@@ -121,6 +127,7 @@ export default {
       }
     }
     return {
+      isCustomer: this.$store.getters.userInfo.authority === 'CUSTOMER_USER',
       activeName: ['1', '2'],
       form: {
         name: '',
@@ -142,7 +149,13 @@ export default {
         id: [{ required: true, validator: id, trigget: 'change' }]
       },
       entityViewTypes: [],
-      typeList: []
+      typeList: [],
+      attrList: {
+        CLIENT_SCOPE: [],
+        SERVER_SCOPE: [],
+        SHARED_SCOPE: [],
+        timeseries: []
+      }
     }
   },
   methods: {
@@ -190,32 +203,37 @@ export default {
         }
       })
     },
-    async entityTypeChange (value, type) {
-      if (type !== 'init') {
-        this.form.id = ''
-        this.typeList = []
-      }
-      let apiName = ''
+    async handlerEntityType (value) {
       const params = {
-        pageSize: 50,
         page: 0,
-        sortProperty: 'name',
+        pageSize: 50,
         sortOrder: 'ASC',
-        type: ''
+        sortProperty: 'name',
+        textSearch: value
       }
-      if (value === 'DEVICE') {
-        apiName = 'getDeviceInfo'
-      } else if (value === 'ASSET') {
-        apiName = 'getAssetInfos'
-      } else {
-        return false
+      const apiName = {
+        DEVICE: this.isCustomer ? 'getCustomerDeviceList' : 'getDeviceInfo',
+        ASSET: this.isCustomer ? 'getCustomerAssetList' : 'getTenantAssets'
       }
-      const res = await this.$api[apiName](params)
-      this.typeList = res.data.data
+      const result = await this.$api[apiName[this.form.entityType]](params, this.$store.getters.userInfo.customerId.id)
+      this.typeList = result.data.data
     },
     async getEntityViewTypes () {
       const res = await this.$api.getEntityViewTypes()
       this.entityViewTypes = res.data
+    },
+    async getAttribute (entityType, id, scope) {
+      if (!id) return
+      const result = await this.$api[
+        scope === 'timeseries' ? 'getPluginsTelemetryKeys' : 'getAttribute'
+      ](entityType, id, scope)
+      this.attrList[scope] = result.data
+    },
+    async getEntityTypeInfo () {
+      const result = await this.$api[this.form.entityType === 'DEVICE' ? 'getOneDeviceInfo'
+        : 'getOneAssetInfo'
+      ](this.form.id)
+      this.handlerEntityType(result.data.name)
     },
     async init () {
       await this.getEntityViewTypes()
@@ -233,7 +251,7 @@ export default {
           timeseries: this.info.keys.timeseries,
           description: this.info.additionalInfo.description
         }
-        this.entityTypeChange(this.form.entityType, 'init')
+        this.getEntityTypeInfo()
       }
     }
   },
@@ -244,11 +262,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.el-tabs {
-  .el-form {
-    width: 900px;
-  }
-}
 .desc {
   font-size: 12px;
   color: #808080;
@@ -257,7 +270,7 @@ export default {
   margin-bottom: 0 !important;
 }
 .entity-container {
-  @include clearfix();
+  height: 74px;
   .el-form-item {
     float: left;
     margin-bottom: 19px !important;
